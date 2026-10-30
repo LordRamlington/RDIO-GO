@@ -182,7 +182,7 @@ export const RecordingsVault: React.FC<RecordingsVaultProps> = ({
   const totalBytes = recordings.reduce((acc, r) => acc + r.fileSizeBytes, 0);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 pb-28">
+    <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-44 scroll-smooth">
       {/* Top Banner: Offline Mode Simulator & Status */}
       <div className="mb-4 p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">

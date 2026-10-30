@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Search,
   Radio,
@@ -41,9 +41,10 @@ interface StationsListViewProps {
   onToggleCatalogMode: (mode: 'curated' | 'global') => void;
   onOpenCountryModal: () => void;
   onRunIntegrityScan: () => void;
-  isScanningIntegrity: boolean;
+  isScanningIntegrity?: boolean;
   searchQuery: string;
   onSearchQueryChange: (q: string) => void;
+  onScrollDirectionChange?: (isScrollingDown: boolean) => void;
 }
 
 export const StationsListView: React.FC<StationsListViewProps> = ({
@@ -71,9 +72,20 @@ export const StationsListView: React.FC<StationsListViewProps> = ({
   isScanningIntegrity,
   searchQuery,
   onSearchQueryChange,
+  onScrollDirectionChange,
 }) => {
   const [onlyOnline, setOnlyOnline] = useState<boolean>(true);
   const { recentSearches, clearSearches } = useRecentSearches();
+  const lastScrollY = useRef(0);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const currentY = e.currentTarget.scrollTop;
+    const diff = currentY - lastScrollY.current;
+    if (Math.abs(diff) > 10) {
+      onScrollDirectionChange?.(diff > 0 && currentY > 40);
+      lastScrollY.current = currentY;
+    }
+  };
 
   const categories: { id: StationCategory; label: string }[] = [
     { id: 'all', label: 'All Stations' },
@@ -147,7 +159,7 @@ export const StationsListView: React.FC<StationsListViewProps> = ({
   }, [activeStationPool, onlyOnline, offlineStationIds]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-3 pb-28">
+    <div onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-3 pb-44 scroll-smooth">
       {/* Top Controls: Catalog Mode Switcher & Country Selector */}
       <div className="flex items-center justify-between gap-2 mb-3">
         {/* Curated vs Worldwide Switcher */}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Heart, Radio } from 'lucide-react';
 import { RadioStation } from '../types/radio';
 import { StationCard } from './StationCard';
@@ -12,6 +12,7 @@ interface FavoritesViewProps {
   onPlayPauseStation?: (station: RadioStation) => void;
   onToggleFavorite: (station: RadioStation) => void;
   onGoToStations: () => void;
+  onScrollDirectionChange?: (isScrollingDown: boolean) => void;
 }
 
 export const FavoritesView: React.FC<FavoritesViewProps> = ({
@@ -23,9 +24,21 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
   onPlayPauseStation,
   onToggleFavorite,
   onGoToStations,
+  onScrollDirectionChange,
 }) => {
+  const lastScrollY = useRef(0);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const currentY = e.currentTarget.scrollTop;
+    const diff = currentY - lastScrollY.current;
+    if (Math.abs(diff) > 8) {
+      onScrollDirectionChange?.(diff > 0 && currentY > 30);
+      lastScrollY.current = currentY;
+    }
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 pb-28">
+    <div onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-44 scroll-smooth">
       <div className="mb-4">
         <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
           <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />

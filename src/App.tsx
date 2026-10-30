@@ -87,6 +87,7 @@ export default function App() {
   // First-Time Station Check state
   const [isFirstTimeScanOpen, setIsFirstTimeScanOpen] = useState<boolean>(() => isFirstTimeScanNeeded());
   const [isScanningIntegrity, setIsScanningIntegrity] = useState<boolean>(false);
+  const [isScrollingDown, setIsScrollingDown] = useState<boolean>(false);
 
   // Modals
   const [isCountryModalOpen, setIsCountryModalOpen] = useState<boolean>(false);
@@ -631,7 +632,7 @@ export default function App() {
       )}
 
       {/* 3. Main View Switcher */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
+      <main className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
         {activeTab === 'stations' && (
           <StationsListView
             stations={curatedStations}
@@ -663,6 +664,7 @@ export default function App() {
             isScanningIntegrity={isScanningIntegrity}
             searchQuery={stationSearchQuery}
             onSearchQueryChange={setStationSearchQuery}
+            onScrollDirectionChange={setIsScrollingDown}
           />
         )}
 
@@ -677,6 +679,7 @@ export default function App() {
             onPlayPauseStation={handleStationPlayPause}
             onToggleFavorite={handleToggleFavorite}
             onAddCustomStation={handleAddCustomStation}
+            onScrollDirectionChange={setIsScrollingDown}
           />
         )}
 
@@ -690,6 +693,7 @@ export default function App() {
             onPlayPauseStation={handleStationPlayPause}
             onToggleFavorite={handleToggleFavorite}
             onGoToStations={() => setActiveTab('stations')}
+            onScrollDirectionChange={setIsScrollingDown}
           />
         )}
 
@@ -784,7 +788,7 @@ export default function App() {
       {/* First-Time Install Station Integrity Check Modal */}
       <FirstTimeCheckModal
         isOpen={isFirstTimeScanOpen}
-        stationsToCheck={curatedStations}
+        stationsToCheck={curatedStations.length >= 30 ? curatedStations : CURATED_STATIONS}
         onComplete={(activeStations, offlineIds) => {
           setOfflineStationIds(offlineIds);
           if (activeStations.length > 0 && currentStation && offlineIds.has(currentStation.id)) {
@@ -808,29 +812,37 @@ export default function App() {
       />
 
       {/* Docked Bottom Bar: Mini Player + AdMob Banner + Bottom Navigation */}
-      <div className="shrink-0 z-30 flex flex-col bg-slate-950/98 border-t border-slate-900/60 pt-1.5">
-        {/* 4. Mini Player (Docked directly above Ad Banner) */}
+      <div className="shrink-0 z-30 flex flex-col bg-slate-950/98 backdrop-blur-md border-t border-slate-900/80 shadow-2xl transition-all duration-300">
+        {/* 4. Mini Player (Firmly docked directly above Ad Banner & Nav, always visible at bottom of screen) */}
         {currentStation && (
-          <MiniPlayer
-            station={currentStation}
-            status={status}
-            isRecording={isRecording}
-            recordingSeconds={recordingSeconds}
-            onPlayPause={handlePlayPause}
-            onToggleRecord={handleToggleRecord}
-            onOpenExpandedPlayer={() => setIsExpandedPlayer(true)}
-          />
+          <div className="transition-transform duration-300 ease-out">
+            <MiniPlayer
+              station={currentStation}
+              status={status}
+              isRecording={isRecording}
+              recordingSeconds={recordingSeconds}
+              onPlayPause={handlePlayPause}
+              onToggleRecord={handleToggleRecord}
+              onOpenExpandedPlayer={() => setIsExpandedPlayer(true)}
+            />
+          </div>
         )}
 
-        {/* 5. Mobile Advertising Banner (Standard 320x50 AdMob Bar) */}
+        {/* 5. Mobile Advertising Banner (Moves in sympathy with list scroll: smoothly collapses on scroll down, expands on scroll up) */}
         {isAdsEnabled && (
-          <AdBanner
-            publisherId={adPublisherId}
-            adSlotId={adSlotId}
-            isTestMode={isAdTestMode}
-            onOpenMonetizationModal={() => setIsMonetizationModalOpen(true)}
-            onRemoveAds={() => handleToggleAds(false)}
-          />
+          <div
+            className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              isScrollingDown ? 'max-h-0 opacity-0 pointer-events-none -translate-y-1' : 'max-h-24 opacity-100 translate-y-0'
+            }`}
+          >
+            <AdBanner
+              publisherId={adPublisherId}
+              adSlotId={adSlotId}
+              isTestMode={isAdTestMode}
+              onOpenMonetizationModal={() => setIsMonetizationModalOpen(true)}
+              onRemoveAds={() => handleToggleAds(false)}
+            />
+          </div>
         )}
 
         {/* 6. Material 3 Bottom Navigation Bar */}

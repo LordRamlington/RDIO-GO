@@ -1,7 +1,7 @@
 import { RadioStation } from '../types/radio';
 
-const HEALTH_CACHE_KEY = 'rdiogo_station_health_v2';
-const FIRST_TIME_CHECK_KEY = 'rdiogo_first_time_scan_done';
+const HEALTH_CACHE_KEY = 'rdiogo_station_health_v3';
+const FIRST_TIME_CHECK_KEY = 'rdiogo_first_time_scan_v3';
 
 interface CachedHealth {
   status: 'online' | 'offline';
@@ -52,7 +52,7 @@ export function markFirstTimeScanComplete(): void {
  */
 export function probeStationAccessibility(
   streamUrl: string,
-  timeoutMs: number = 3200
+  timeoutMs: number = 5000
 ): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
     // 1. Basic URL sanity check
@@ -61,8 +61,17 @@ export function probeStationAccessibility(
       return;
     }
 
-    // In HTTPS contexts, insecure HTTP streams are blocked by browsers (Mixed Content)
-    if (window.location.protocol === 'https:' && streamUrl.startsWith('http://')) {
+    // In Capacitor Android, cleartext and mixed content are enabled in AndroidManifest and config.
+    const isLocalOrNative =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.protocol === 'capacitor:' ||
+        window.location.protocol === 'file:' ||
+        (window as any).Capacitor !== undefined ||
+        /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent));
+
+    if (!isLocalOrNative && typeof window !== 'undefined' && window.location.protocol === 'https:' && streamUrl.startsWith('http://')) {
       resolve(false);
       return;
     }
@@ -122,6 +131,9 @@ export function probeStationAccessibility(
     audio.onloadedmetadata = () => cleanup(true);
     audio.oncanplay = () => cleanup(true);
     audio.onplaying = () => cleanup(true);
+    audio.onloadeddata = () => cleanup(true);
+    audio.ondurationchange = () => cleanup(true);
+    audio.ontimeupdate = () => cleanup(true);
     audio.onprogress = () => {
       if (audio.buffered && audio.buffered.length > 0) {
         cleanup(true);
@@ -139,6 +151,29 @@ export function probeStationAccessibility(
       cleanup(false);
     }
   });
+}
+
+/**
+ * Probes the primary stream and any backup stream URLs if available
+ */
+export async function probeStationWithBackups(
+  station: RadioStation,
+  timeoutMs: number = 5000
+): Promise<boolean> {
+  const isPrimaryAlive = await probeStationAccessibility(station.streamUrl, timeoutMs);
+  if (isPrimaryAlive) return true;
+
+  if (station.backupStreamUrls && station.backupStreamUrls.length > 0) {
+    for (const backupUrl of station.backupStreamUrls) {
+      const isBackupAlive = await probeStationAccessibility(backupUrl, timeoutMs);
+      if (isBackupAlive) {
+        station.streamUrl = backupUrl;
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 export interface VerificationProgress {
@@ -180,7 +215,7 @@ export async function verifyStationBatch(
           currentStationName: station.name,
         });
 
-        const isAlive = await probeStationAccessibility(station.streamUrl, 3000);
+        const isAlive = await probeStationWithBackups(station, 5000);
         scanned += 1;
 
         if (isAlive) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Search,
   Loader2,
@@ -30,6 +30,7 @@ interface SearchGlobalStationsProps {
   onPlayPauseStation?: (station: RadioStation) => void;
   onToggleFavorite: (station: RadioStation) => void;
   onAddCustomStation: (station: RadioStation) => void;
+  onScrollDirectionChange?: (isScrollingDown: boolean) => void;
 }
 
 export const SearchGlobalStations: React.FC<SearchGlobalStationsProps> = ({
@@ -42,8 +43,19 @@ export const SearchGlobalStations: React.FC<SearchGlobalStationsProps> = ({
   onPlayPauseStation,
   onToggleFavorite,
   onAddCustomStation,
+  onScrollDirectionChange,
 }) => {
   const [query, setQuery] = useState('');
+  const lastScrollY = useRef(0);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const currentY = e.currentTarget.scrollTop;
+    const diff = currentY - lastScrollY.current;
+    if (Math.abs(diff) > 10) {
+      onScrollDirectionChange?.(diff > 0 && currentY > 40);
+      lastScrollY.current = currentY;
+    }
+  };
   const [selectedTag, setSelectedTag] = useState<string>('jazz');
   const [selectedCountry, setSelectedCountry] = useState<CountryItem>(COUNTRIES_CATALOG[0]);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
@@ -181,7 +193,7 @@ export const SearchGlobalStations: React.FC<SearchGlobalStationsProps> = ({
   const visibleResults = results.filter((st) => !offlineStationIds.has(st.id));
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 pb-28">
+    <div onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-44 scroll-smooth">
       {/* Search Header */}
       <div className="mb-4">
         <div className="flex items-center justify-between">
