@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch: # Allows manual trigger anytime from GitHub Actions web tab
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Native Android APK
@@ -61,9 +64,27 @@ jobs:
           cd android
           ./gradlew assembleDebug --no-daemon --stacktrace
 
+      - name: Prepare Named APK File
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk ./RDIO-GO.apk
+
       - name: Upload APK to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: RDIO-GO-Android-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: ./RDIO-GO.apk
           if-no-files-found: error
+
+      - name: Publish Direct APK to GitHub Releases (No Zip)
+        uses: softprops/action-gh-release@v2
+        continue-on-error: true
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: v1.0-latest
+          name: "RDIO-GO Android APK (Direct Download)"
+          body: |
+            ### Direct Android APK Download
+            Click the `RDIO-GO.apk` link below to download the actual APK directly to your phone without any zip file.
+          files: ./RDIO-GO.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
