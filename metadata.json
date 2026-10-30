@@ -1,0 +1,6 @@
+{
+  "name": "Waves Radio & Recorder",
+  "description": "Android-style live radio streaming app featuring categorized worldwide stations, live audio equalizer, and offline broadcast recording with playback.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
