@@ -275,6 +275,25 @@ export const InstallModal: React.FC<InstallModalProps> = ({
           </div>
         </div>
 
+        {/* GitHub Actions 1-Click APK Builder */}
+        <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 mb-3">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Layers className="w-4 h-4 text-purple-400" />
+            <h4 className="text-xs font-bold text-purple-300 uppercase tracking-wide">
+              GitHub Actions Cloud APK Builder (Automated)
+            </h4>
+          </div>
+          <p className="text-xs text-slate-300 leading-relaxed mb-2">
+            A turnkey GitHub Actions workflow is now pre-configured at <code className="text-emerald-400 text-[11px]">.github/workflows/build-apk.yml</code>. You can compile the native Android APK in the cloud without installing Android Studio or Java locally:
+          </p>
+          <div className="text-[11px] text-slate-300 bg-slate-950/80 p-3 rounded-xl border border-slate-800 space-y-1">
+            <div>1. Push or sync this repository to your <strong>GitHub</strong> account.</div>
+            <div>2. Open your repository on GitHub and click the <strong>&quot;Actions&quot;</strong> tab.</div>
+            <div>3. Click <strong>&quot;Build Android APK&quot;</strong> and hit <strong>&quot;Run workflow&quot;</strong>.</div>
+            <div>4. When finished (~2 minutes), download the <strong>RDIO-GO-Android-APK</strong> file directly from the summary page to install on your phone!</div>
+          </div>
+        </div>
+
         <div className="flex justify-end pt-1">
           <button
             onClick={onClose}

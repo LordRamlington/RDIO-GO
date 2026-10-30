@@ -1,0 +1,13 @@
+{
+  "appId": "com.rdiogo.app",
+  "appName": "RDIO-GO",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
