@@ -43,16 +43,36 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Configure Android Permissions & Network Security
+      - name: Configure Android Permissions, Notifications & Background Playback
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
-            # Ensure Internet, WakeLock, and Network State permissions
+            # Ensure Internet, WakeLock, Network State, Wi-Fi State, Notifications, and Media Playback permissions
             if ! grep -q "android.permission.INTERNET" "$MANIFEST_PATH"; then
-              sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' "$MANIFEST_PATH"
+              sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST_PATH"
             fi
             # Allow cleartext HTTP audio streams for international radio feeds
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST_PATH"
+          fi
+
+          # Enable background audio by keeping WebView timers active in MainActivity onPause
+          MAIN_ACTIVITY=$(find android -name "MainActivity.java" | head -n 1)
+          if [ -f "$MAIN_ACTIVITY" ]; then
+            cat << 'EOF' > "$MAIN_ACTIVITY"
+package com.rdiogo.app;
+
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().resumeTimers();
+        }
+    }
+}
+EOF
           fi
 
       - name: Grant Execute Permission to Gradle Wrapper

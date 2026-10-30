@@ -32,6 +32,7 @@ export interface RadioStation {
   accentColor: string;
   tags: string[];
   homepage?: string;
+  favicon?: string;
   isCustom?: boolean;
 }
 

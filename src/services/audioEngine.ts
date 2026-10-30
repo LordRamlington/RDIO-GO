@@ -13,11 +13,20 @@ export interface AudioAnalysisData {
 export type VisualizerCallback = (data: AudioAnalysisData) => void;
 export type StatusCallback = (status: 'idle' | 'loading' | 'playing' | 'paused' | 'error', errorMessage?: string) => void;
 
+export interface MediaSessionCallbacks {
+  onPlay?: () => void;
+  onPause?: () => void;
+  onNext?: () => void;
+  onPrevious?: () => void;
+}
+
 class AudioEngine {
   private audio: HTMLAudioElement | null = null;
   private currentStation: RadioStation | null = null;
   private currentVolume = 0.9;
   private isMuted = false;
+  private mediaSessionCallbacks: MediaSessionCallbacks = {};
+  private wakeLock: any = null;
 
   // Web Audio API DSP Nodes for Real Equalizer Audio FX
   private audioContext: AudioContext | null = null;
@@ -114,6 +123,16 @@ class AudioEngine {
       this.handlePlaybackFailure();
     });
 
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && this.currentStatus === 'playing') {
+          if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume().catch(() => {});
+          }
+        }
+      });
+    }
+
     this.setupMediaSessionHandlers();
   }
 
@@ -199,34 +218,73 @@ class AudioEngine {
     }
   }
 
+  public setMediaSessionCallbacks(callbacks: MediaSessionCallbacks) {
+    this.mediaSessionCallbacks = callbacks;
+    this.setupMediaSessionHandlers();
+  }
+
   private setupMediaSessionHandlers() {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
 
     try {
-      navigator.mediaSession.setActionHandler('play', () => this.resume());
-      navigator.mediaSession.setActionHandler('pause', () => this.pause());
-      navigator.mediaSession.setActionHandler('stop', () => this.pause());
+      navigator.mediaSession.setActionHandler('play', () => {
+        this.resume();
+        this.mediaSessionCallbacks.onPlay?.();
+      });
+
+      navigator.mediaSession.setActionHandler('pause', () => {
+        this.pause();
+        this.mediaSessionCallbacks.onPause?.();
+      });
+
+      navigator.mediaSession.setActionHandler('stop', () => {
+        this.pause();
+        this.mediaSessionCallbacks.onPause?.();
+      });
+
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        this.mediaSessionCallbacks.onPrevious?.();
+      });
+
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        this.mediaSessionCallbacks.onNext?.();
+      });
     } catch (e) {
       console.warn('MediaSession action handler notice:', e);
     }
   }
 
-  private updateMediaSession() {
+  public updateMediaSession(station?: RadioStation) {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
 
+    const st = station || this.currentStation;
+    if (!st) return;
+
     try {
-      if (this.currentStation) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: this.currentStation.name,
-          artist: `${this.currentStation.subgenre} · ${this.currentStation.country}`,
-          album: 'RDIO-GO Live Radio',
-          artwork: [
-            { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-            { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-          ],
-        });
-        navigator.mediaSession.playbackState = 'playing';
+      // Build absolute URLs for notification shade artwork (required by Android NotificationManager)
+      const origin =
+        typeof window !== 'undefined' && window.location.origin && window.location.origin !== 'null'
+          ? window.location.origin
+          : 'https://localhost';
+
+      const artwork = [
+        { src: `${origin}/pwa-192x192.png`, sizes: '192x192', type: 'image/png' },
+        { src: `${origin}/pwa-512x512.png`, sizes: '512x512', type: 'image/png' },
+      ];
+
+      // If station has direct favicon, place it at the front of artwork
+      if (st.favicon && typeof st.favicon === 'string' && st.favicon.startsWith('http')) {
+        artwork.unshift({ src: st.favicon, sizes: '96x96', type: 'image/png' });
       }
+
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: st.name,
+        artist: `${st.subgenre || st.category.toUpperCase()} · ${st.country || 'Live'}`,
+        album: 'RDIO-GO Radio',
+        artwork,
+      });
+
+      navigator.mediaSession.playbackState = this.currentStatus === 'playing' ? 'playing' : 'paused';
     } catch (e) {
       console.warn('MediaSession metadata update notice:', e);
     }
@@ -243,6 +301,7 @@ class AudioEngine {
 
     if (station && !isBackup) {
       this.currentStation = station;
+      this.updateMediaSession(station);
     }
 
     const sessionId = ++this.playSessionId;
@@ -595,7 +654,48 @@ class AudioEngine {
 
   private setStatus(status: 'idle' | 'loading' | 'playing' | 'paused' | 'error', errorMsg?: string) {
     this.currentStatus = status;
+
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      if (status === 'playing') {
+        navigator.mediaSession.playbackState = 'playing';
+      } else if (status === 'paused') {
+        navigator.mediaSession.playbackState = 'paused';
+      } else if (status === 'idle' || status === 'error') {
+        navigator.mediaSession.playbackState = 'none';
+      }
+    }
+
+    if (status === 'playing') {
+      this.acquireWakeLock();
+    } else {
+      this.releaseWakeLock();
+    }
+
     this.statusListeners.forEach((cb) => cb(status, errorMsg));
+  }
+
+  private async acquireWakeLock() {
+    if (typeof navigator !== 'undefined' && 'wakeLock' in navigator && !this.wakeLock) {
+      try {
+        this.wakeLock = await (navigator as any).wakeLock.request('screen');
+        this.wakeLock.addEventListener('release', () => {
+          this.wakeLock = null;
+        });
+      } catch (err) {
+        // WakeLock may be rejected in background or low-power modes
+      }
+    }
+  }
+
+  private releaseWakeLock() {
+    if (this.wakeLock) {
+      try {
+        this.wakeLock.release().catch(() => {});
+      } catch {
+        // Ignore
+      }
+      this.wakeLock = null;
+    }
   }
 
   public notifyStatus(status: 'idle' | 'loading' | 'playing' | 'paused' | 'error', errorMsg?: string) {

@@ -386,6 +386,50 @@ export default function App() {
     }
   };
 
+  // Next / Previous Station handlers (MediaSession & Android pull-down notification controls)
+  const handleNextStation = useCallback(() => {
+    const list = catalogMode === 'curated' ? curatedStations : globalStations;
+    if (list.length === 0) return;
+    const currentIndex = currentStation ? list.findIndex((s) => s.id === currentStation.id) : -1;
+    const nextIndex = (currentIndex + 1) % list.length;
+    const nextStation = list[nextIndex];
+    if (nextStation) {
+      setCurrentStation(nextStation);
+      audioEngine.playStream(nextStation.streamUrl, nextStation);
+    }
+  }, [catalogMode, curatedStations, globalStations, currentStation]);
+
+  const handlePrevStation = useCallback(() => {
+    const list = catalogMode === 'curated' ? curatedStations : globalStations;
+    if (list.length === 0) return;
+    const currentIndex = currentStation ? list.findIndex((s) => s.id === currentStation.id) : 0;
+    const prevIndex = (currentIndex - 1 + list.length) % list.length;
+    const prevStation = list[prevIndex];
+    if (prevStation) {
+      setCurrentStation(prevStation);
+      audioEngine.playStream(prevStation.streamUrl, prevStation);
+    }
+  }, [catalogMode, curatedStations, globalStations, currentStation]);
+
+  // Connect Android MediaSession callbacks (Pull-down notification controls & lock screen)
+  useEffect(() => {
+    audioEngine.setMediaSessionCallbacks({
+      onPlay: () => {
+        if (!currentStation) return;
+        if (status === 'paused') {
+          audioEngine.resume();
+        } else {
+          audioEngine.playStream(currentStation.streamUrl, currentStation);
+        }
+      },
+      onPause: () => {
+        audioEngine.pause();
+      },
+      onNext: handleNextStation,
+      onPrevious: handlePrevStation,
+    });
+  }, [currentStation, status, handleNextStation, handlePrevStation]);
+
   // Select station banner click:
   // Tapping the currently active station banner opens the visualizer!
   // Tapping any other station switches to and plays that station

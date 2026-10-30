@@ -121,6 +121,7 @@ function sanitizeStation(st: RawApiStation): RadioStation {
     accentColor: getColorForCategory(category),
     tags: parsedTags.length > 0 ? parsedTags : [category],
     homepage: st.homepage,
+    favicon: st.favicon || undefined,
   };
 }
 
