@@ -39,7 +39,7 @@ export const FirstTimeCheckModal: React.FC<FirstTimeCheckModalProps> = ({
     let isMounted = true;
     setIsScanning(true);
 
-    verifyStationBatch(stationsToCheck, 3, (p) => {
+    verifyStationBatch(stationsToCheck, 6, (p) => {
       if (isMounted) {
         setProgress(p);
       }

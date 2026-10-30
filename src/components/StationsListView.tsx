@@ -159,7 +159,11 @@ export const StationsListView: React.FC<StationsListViewProps> = ({
   }, [activeStationPool, onlyOnline, offlineStationIds]);
 
   return (
-    <div onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-3 pb-44 scroll-smooth">
+    <div
+      onScroll={handleScroll}
+      className="flex-1 min-h-0 overflow-y-auto px-4 py-3 pb-44 scroll-smooth touch-pan-y"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
       {/* Top Controls: Catalog Mode Switcher & Country Selector */}
       <div className="flex items-center justify-between gap-2 mb-3">
         {/* Curated vs Worldwide Switcher */}
@@ -280,7 +284,7 @@ export const StationsListView: React.FC<StationsListViewProps> = ({
       <div className="flex items-center justify-between mb-3 px-1 text-xs text-slate-400">
         <div className="flex items-center gap-2">
           <span className="font-medium text-slate-300">
-            {filteredStations.length} {selectedCategory !== 'all' ? selectedCategory : 'active'} stations
+            {filteredStations.length} {selectedCategory !== 'all' ? selectedCategory : 'active'} stations{selectedCountry.code && catalogMode === 'global' ? ` · ${selectedCountry.flag || '🌐'} ${selectedCountry.name}` : ''}
           </span>
 
           {/* Online Only Filter Toggle */}
@@ -364,7 +368,7 @@ export const StationsListView: React.FC<StationsListViewProps> = ({
               onClick={onLoadMoreGlobal}
               className="w-full py-3 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/40 text-xs font-semibold text-emerald-400 hover:text-white transition-all flex items-center justify-center gap-2"
             >
-              <span>Load More Stations (+60)</span>
+              <span>Load More Stations</span>
             </button>
           </div>
         )}

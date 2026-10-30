@@ -125,24 +125,25 @@ export const SearchGlobalStations: React.FC<SearchGlobalStationsProps> = ({
       addSearch(trimmedQuery);
     }
 
+    const pageSize = countryToUse.code ? 600 : 60;
     const data = await searchGlobalStations({
       query: trimmedQuery || undefined,
       tag: tagToUse || undefined,
       countryCode: countryToUse.code || undefined,
-      limit: 30,
+      limit: pageSize,
       offset: curOffset,
       order,
     });
 
     if (resetPage) {
       setResults(data);
-      setOffset(30);
+      setOffset(pageSize);
     } else {
       setResults((prev) => [...prev, ...data]);
-      setOffset((prev) => prev + 30);
+      setOffset((prev) => prev + pageSize);
     }
 
-    setHasMore(data.length >= 30);
+    setHasMore(data.length >= pageSize);
     setIsSearching(false);
   };
 
@@ -193,7 +194,11 @@ export const SearchGlobalStations: React.FC<SearchGlobalStationsProps> = ({
   const visibleResults = results.filter((st) => !offlineStationIds.has(st.id));
 
   return (
-    <div onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-44 scroll-smooth">
+    <div
+      onScroll={handleScroll}
+      className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-44 scroll-smooth touch-pan-y"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
       {/* Search Header */}
       <div className="mb-4">
         <div className="flex items-center justify-between">

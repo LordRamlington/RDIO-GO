@@ -207,7 +207,12 @@ export async function searchGlobalStations(params: SearchStationParams): Promise
         let stations = rawData
           .filter((st) => {
             const stream = st.url_resolved || st.url;
-            return stream && stream.startsWith('https://') && st.name && st.name.trim().length > 0;
+            return (
+              stream &&
+              (stream.startsWith('http://') || stream.startsWith('https://')) &&
+              st.name &&
+              st.name.trim().length > 0
+            );
           })
           .map((st) => {
             const station = sanitizeStation(st);
@@ -237,7 +242,11 @@ export async function searchGlobalStations(params: SearchStationParams): Promise
               const tagStations = tagData
                 .filter((st) => {
                   const stream = st.url_resolved || st.url;
-                  return stream && stream.startsWith('https://') && !existingIds.has(`rb-${st.stationuuid}`);
+                  return (
+                    stream &&
+                    (stream.startsWith('http://') || stream.startsWith('https://')) &&
+                    !existingIds.has(`rb-${st.stationuuid}`)
+                  );
                 })
                 .map(sanitizeStation);
               stations = [...stations, ...tagStations];

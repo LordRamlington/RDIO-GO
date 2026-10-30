@@ -187,36 +187,42 @@ export default function App() {
         saveRecentSearch(trimmedQ);
       }
 
+      // When a country is selected, fetch all associated stations (up to 1000) so the list is fully populated.
+      // In worldwide mode, fetch 200 stations per page.
+      const pageSize = selectedCountry.code ? 1000 : 200;
+
       const data = await searchGlobalStations({
         query: trimmedQ ? trimmedQ : undefined,
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
         countryCode: selectedCountry.code || undefined,
-        limit: 60,
+        limit: pageSize,
         offset: curOffset,
         order: 'clickcount',
       });
 
       if (resetPage) {
         setGlobalStations(data);
-        setGlobalOffset(60);
+        setGlobalOffset(pageSize);
       } else {
         setGlobalStations((prev) => [...prev, ...data]);
-        setGlobalOffset((prev) => prev + 60);
+        setGlobalOffset((prev) => prev + pageSize);
       }
 
-      setHasMoreGlobal(data.length >= 60);
+      setHasMoreGlobal(data.length >= pageSize);
       setIsGlobalLoading(false);
     },
     [stationSearchQuery, selectedCategory, selectedCountry, globalOffset]
   );
 
-  // Debounced live fetch when user searches or switches category/country
+  // Debounced live fetch when user switches mode, searches, or switches category/country
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchGlobalStationsData(true);
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [stationSearchQuery, selectedCategory, selectedCountry]);
+    if (catalogMode === 'global') {
+      const timer = setTimeout(() => {
+        fetchGlobalStationsData(true);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [catalogMode, stationSearchQuery, selectedCategory, selectedCountry]);
 
   // Capture PWA install prompt
   useEffect(() => {
@@ -788,13 +794,13 @@ export default function App() {
       {/* First-Time Install Station Integrity Check Modal */}
       <FirstTimeCheckModal
         isOpen={isFirstTimeScanOpen}
-        stationsToCheck={curatedStations.length >= 30 ? curatedStations : CURATED_STATIONS}
+        stationsToCheck={CURATED_STATIONS.slice(0, 100)}
         onComplete={(activeStations, offlineIds) => {
           setOfflineStationIds(offlineIds);
           if (activeStations.length > 0 && currentStation && offlineIds.has(currentStation.id)) {
             setCurrentStation(activeStations[0]);
           }
-          showToast(`Integrity check complete: ${activeStations.length} active streams verified!`);
+          showToast(`Integrity check complete: ${activeStations.length} of 100 active streams verified!`);
         }}
         onClose={() => setIsFirstTimeScanOpen(false)}
       />
@@ -812,10 +818,10 @@ export default function App() {
       />
 
       {/* Docked Bottom Bar: Mini Player + AdMob Banner + Bottom Navigation */}
-      <div className="shrink-0 z-30 flex flex-col bg-slate-950/98 backdrop-blur-md border-t border-slate-900/80 shadow-2xl transition-all duration-300">
+      <div className="shrink-0 z-30 flex flex-col bg-slate-950/98 backdrop-blur-md border-t border-slate-900/80 shadow-2xl">
         {/* 4. Mini Player (Firmly docked directly above Ad Banner & Nav, always visible at bottom of screen) */}
         {currentStation && (
-          <div className="transition-transform duration-300 ease-out">
+          <div className="transition-transform duration-200">
             <MiniPlayer
               station={currentStation}
               status={status}
@@ -828,13 +834,9 @@ export default function App() {
           </div>
         )}
 
-        {/* 5. Mobile Advertising Banner (Moves in sympathy with list scroll: smoothly collapses on scroll down, expands on scroll up) */}
+        {/* 5. Mobile Advertising Banner (Always visible and cleanly docked above nav bar) */}
         {isAdsEnabled && (
-          <div
-            className={`transition-all duration-300 ease-in-out overflow-hidden ${
-              isScrollingDown ? 'max-h-0 opacity-0 pointer-events-none -translate-y-1' : 'max-h-24 opacity-100 translate-y-0'
-            }`}
-          >
+          <div className="overflow-hidden">
             <AdBanner
               publisherId={adPublisherId}
               adSlotId={adSlotId}

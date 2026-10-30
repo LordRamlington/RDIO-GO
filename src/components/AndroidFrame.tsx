@@ -13,9 +13,9 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
   onToggleFrame,
 }) => {
   return (
-    <div className="h-full h-[100dvh] w-full bg-slate-950 text-slate-100 flex flex-col items-center justify-center relative selection:bg-emerald-500 selection:text-slate-950 font-sans overflow-hidden">
+    <div className="w-full h-full min-h-0 flex-1 flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950 font-sans overflow-hidden">
       {/* Top Desktop bar with Device Frame Switcher */}
-      <div className="w-full max-w-5xl px-4 py-2 hidden lg:flex items-center justify-between text-xs text-slate-400 border-b border-slate-900 bg-slate-950/80 shrink-0">
+      <div className="w-full max-w-5xl mx-auto px-4 py-2 hidden lg:flex items-center justify-between text-xs text-slate-400 border-b border-slate-900 bg-slate-950/80 shrink-0">
         <div className="flex items-center gap-2">
           <span className="font-bold text-slate-200 tracking-tight flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -44,20 +44,20 @@ export const AndroidFrame: React.FC<AndroidFrameProps> = ({
         </button>
       </div>
 
-      {/* Main Container */}
+      {/* Main Container: Direct full-screen on mobile (<sm), framed chassis on desktop (sm:) */}
       <div
-        className={`w-full flex-1 min-h-0 flex flex-col items-center justify-center overflow-hidden transition-all duration-300 ${
+        className={`w-full flex-1 min-h-0 flex flex-col sm:items-center sm:justify-center overflow-hidden transition-all duration-300 ${
           isPhoneFrame ? 'p-0 sm:py-4 sm:px-4' : 'p-0'
         }`}
       >
         {isPhoneFrame ? (
-          /* Android Chassis Wrapper */
-          <div className="relative w-full max-w-[440px] h-full sm:h-[860px] sm:max-h-[96vh] bg-slate-950 sm:rounded-[44px] sm:border-[8px] sm:border-slate-800 sm:ring-1 sm:ring-slate-700/60 shadow-2xl flex flex-col overflow-hidden">
-            {/* Front Camera Punch-hole (Android Camera) */}
+          /* Mobile: directly matches screen with full height and min-h-0. Desktop: framed phone */
+          <div className="relative w-full h-full flex-1 min-h-0 sm:max-w-[440px] sm:h-[860px] sm:max-h-[96vh] bg-slate-950 sm:rounded-[44px] sm:border-[8px] sm:border-slate-800 sm:ring-1 sm:ring-slate-700/60 shadow-2xl flex flex-col overflow-hidden">
+            {/* Front Camera Punch-hole (Desktop preview only) */}
             <div className="hidden sm:block absolute top-2.5 left-1/2 -translate-x-1/2 w-4 h-4 bg-black rounded-full border border-slate-800 z-50 pointer-events-none" />
 
             {/* Inner Android App Container */}
-            <div className="w-full h-full flex flex-col overflow-hidden relative bg-slate-950">
+            <div className="w-full h-full flex-1 min-h-0 flex flex-col overflow-hidden relative bg-slate-950">
               {children}
             </div>
           </div>

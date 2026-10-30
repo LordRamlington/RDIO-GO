@@ -1,7 +1,7 @@
 import { RadioStation } from '../types/radio';
 
-const HEALTH_CACHE_KEY = 'rdiogo_station_health_v3';
-const FIRST_TIME_CHECK_KEY = 'rdiogo_first_time_scan_v3';
+const HEALTH_CACHE_KEY = 'rdiogo_station_health_v4';
+const FIRST_TIME_CHECK_KEY = 'rdiogo_first_time_scan_v4';
 
 interface CachedHealth {
   status: 'online' | 'offline';

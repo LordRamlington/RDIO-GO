@@ -38,7 +38,11 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
   };
 
   return (
-    <div onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-44 scroll-smooth">
+    <div
+      onScroll={handleScroll}
+      className="flex-1 min-h-0 overflow-y-auto px-4 py-4 pb-44 scroll-smooth touch-pan-y"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
       <div className="mb-4">
         <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
           <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
