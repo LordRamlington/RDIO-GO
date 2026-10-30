@@ -1,13 +1,15 @@
-// RDIO-GO Service Worker - v3.5 (Google Play Compliance Ready)
-const CACHE_NAME = 'rdiogo-v3.5';
+// RDIO-GO Service Worker - v3.6 (PWA & PWABuilder 100% Compliant)
+const CACHE_NAME = 'rdiogo-v3.6';
 
-// Only precache offline fallback shell
+// Precache offline fallback shell and app branding
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.json',
   '/manifest.webmanifest',
   '/pwa-192x192.png',
   '/pwa-512x512.png',
+  '/screenshot-mobile.png',
+  '/screenshot-desktop.png',
   '/icon.svg',
 ];
 

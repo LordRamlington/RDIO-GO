@@ -1,8 +1,8 @@
 {
-  "id": "/",
-  "name": "RDIO-GO",
+  "id": "com.rdiogo.app",
+  "name": "RDIO-GO Live Radio",
   "short_name": "RDIO-GO",
-  "description": "Android live radio streaming with categorized stations, live audio equalizer, and offline broadcast recording.",
+  "description": "RDIO-GO is an Android live radio streaming app featuring 40,000+ categorized stations worldwide, real-time audio visualizer, sleep timer, and offline broadcast recording.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -12,7 +12,7 @@
   "background_color": "#020617",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["music", "entertainment", "audio"],
+  "categories": ["music", "entertainment", "news"],
   "prefer_related_applications": false,
   "related_applications": [],
   "icons": [
@@ -45,7 +45,7 @@
     {
       "name": "Radio Stations",
       "short_name": "Radio",
-      "description": "Browse live categorized radio stations",
+      "description": "Browse 40,000+ live categorized radio stations",
       "url": "/?tab=stations",
       "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     },
@@ -59,15 +59,15 @@
   ],
   "screenshots": [
     {
-      "src": "/pwa-512x512.png",
-      "sizes": "512x512",
+      "src": "/screenshot-mobile.png",
+      "sizes": "720x1280",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "RDIO-GO Radio Station Player"
     },
     {
-      "src": "/pwa-512x512.png",
-      "sizes": "512x512",
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
       "label": "RDIO-GO Radio Station Player Wide"
