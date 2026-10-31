@@ -43,7 +43,7 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Configure Android Permissions, Notifications & Background Playback
+      - name: Configure Android Native Service, Permissions & Files
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
@@ -53,39 +53,17 @@ jobs:
             fi
             # Allow cleartext HTTP audio streams for international radio feeds
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST_PATH"
+            # Register native RadioPlaybackService with mediaPlayback foregroundServiceType
+            if ! grep -q "RadioPlaybackService" "$MANIFEST_PATH"; then
+              sed -i '/<\/application>/i \        <service android:name="com.rdiogo.app.RadioPlaybackService" android:foregroundServiceType="mediaPlayback" android:exported="false" />' "$MANIFEST_PATH"
+            fi
           fi
 
-          # Enable background audio by keeping WebView active in MainActivity onPause and onStop
-          MAIN_ACTIVITY=$(find android -name "MainActivity.java" 2>/dev/null | head -n 1)
-          if [ -n "$MAIN_ACTIVITY" ] && [ -f "$MAIN_ACTIVITY" ]; then
-            printf '%s\n' \
-              'package com.rdiogo.app;' \
-              '' \
-              'import android.webkit.WebView;' \
-              'import com.getcapacitor.BridgeActivity;' \
-              '' \
-              'public class MainActivity extends BridgeActivity {' \
-              '    @Override' \
-              '    public void onPause() {' \
-              '        super.onPause();' \
-              '        if (getBridge() != null && getBridge().getWebView() != null) {' \
-              '            WebView webView = getBridge().getWebView();' \
-              '            webView.onResume();' \
-              '            webView.resumeTimers();' \
-              '        }' \
-              '    }' \
-              '' \
-              '    @Override' \
-              '    public void onStop() {' \
-              '        super.onStop();' \
-              '        if (getBridge() != null && getBridge().getWebView() != null) {' \
-              '            WebView webView = getBridge().getWebView();' \
-              '            webView.onResume();' \
-              '            webView.resumeTimers();' \
-              '        }' \
-              '    }' \
-              '}' > "$MAIN_ACTIVITY"
-          fi
+          # Copy native Java source files into Android app package
+          TARGET_JAVA_DIR="android/app/src/main/java/com/rdiogo/app"
+          mkdir -p "$TARGET_JAVA_DIR"
+          cp android-native/MainActivity.java "$TARGET_JAVA_DIR/MainActivity.java"
+          cp android-native/RadioPlaybackService.java "$TARGET_JAVA_DIR/RadioPlaybackService.java"
 
       - name: Grant Execute Permission to Gradle Wrapper
         run: |

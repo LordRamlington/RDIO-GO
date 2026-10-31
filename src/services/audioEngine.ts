@@ -135,6 +135,22 @@ class AudioEngine {
       });
     }
 
+    // Register Native Android Notification Action Listener
+    if (typeof window !== 'undefined') {
+      (window as any).onNativeMediaAction = (action: string) => {
+        console.info('Native Android media action received in web engine:', action);
+        if (action === 'play') {
+          this.resume();
+        } else if (action === 'pause') {
+          this.pause();
+        } else if (action === 'next') {
+          this.playNextStation();
+        } else if (action === 'prev' || action === 'previous') {
+          this.playPreviousStation();
+        }
+      };
+    }
+
     this.setupMediaSessionHandlers();
   }
 
@@ -359,6 +375,19 @@ class AudioEngine {
       });
 
       navigator.mediaSession.playbackState = this.currentStatus === 'playing' ? 'playing' : 'paused';
+
+      // Sync with native Android Foreground Service notification bridge
+      if (typeof window !== 'undefined' && (window as any).AndroidRadioBridge) {
+        try {
+          (window as any).AndroidRadioBridge.updatePlayback(
+            st.name,
+            `${st.subgenre || st.category.toUpperCase()} · ${st.country || 'Live'}`,
+            this.currentStatus === 'playing'
+          );
+        } catch (err) {
+          console.warn('Android native bridge update notice:', err);
+        }
+      }
     } catch (e) {
       console.warn('MediaSession metadata update notice:', e);
     }
@@ -743,6 +772,18 @@ class AudioEngine {
       this.acquireWakeLock();
     } else {
       this.releaseWakeLock();
+    }
+
+    if (this.currentStation && typeof window !== 'undefined' && (window as any).AndroidRadioBridge) {
+      try {
+        (window as any).AndroidRadioBridge.updatePlayback(
+          this.currentStation.name,
+          `${this.currentStation.subgenre || this.currentStation.category.toUpperCase()} · ${this.currentStation.country || 'Live'}`,
+          status === 'playing'
+        );
+      } catch (err) {
+        // ignore
+      }
     }
 
     this.statusListeners.forEach((cb) => cb(status, errorMsg));
