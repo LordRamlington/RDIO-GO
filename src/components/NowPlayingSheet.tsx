@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   Square,
   Globe,
+  SkipBack,
+  SkipForward,
 } from 'lucide-react';
 import { RadioStation, PlaybackStatus } from '../types/radio';
 import { StationArtwork } from './StationArtwork';
@@ -30,6 +32,8 @@ interface NowPlayingSheetProps {
   sleepTimerRemaining: number | null;
   onClose: () => void;
   onPlayPause: () => void;
+  onNextStation?: () => void;
+  onPreviousStation?: () => void;
   onToggleFavorite: () => void;
   onToggleRecord: () => void;
   onVolumeChange: (vol: number) => void;
@@ -49,6 +53,8 @@ export const NowPlayingSheet: React.FC<NowPlayingSheetProps> = ({
   sleepTimerRemaining,
   onClose,
   onPlayPause,
+  onNextStation,
+  onPreviousStation,
   onToggleFavorite,
   onToggleRecord,
   onVolumeChange,
@@ -200,16 +206,25 @@ export const NowPlayingSheet: React.FC<NowPlayingSheetProps> = ({
           </div>
         </div>
 
-        {/* Primary Playback Controls */}
+        {/* Primary Playback Controls with Skip Previous & Skip Next */}
         <div className="flex items-center justify-around my-2">
           {/* Audio Equalizer Quick Trigger */}
           <button
             onClick={onOpenEqualizer}
-            className="min-w-[48px] min-h-[48px] flex flex-col items-center justify-center text-slate-400 hover:text-white rounded-xl transition-colors"
+            className="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center text-slate-400 hover:text-white rounded-xl transition-colors"
             title="Audio FX Equalizer"
           >
             <Sliders className="w-5 h-5" />
             <span className="text-[10px] text-slate-400 mt-1 font-medium">Equalizer</span>
+          </button>
+
+          {/* Previous Station Button */}
+          <button
+            onClick={onPreviousStation}
+            className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 text-slate-200 flex items-center justify-center hover:bg-slate-800 hover:text-white active:scale-95 transition-all shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            title="Previous Station"
+          >
+            <SkipBack className="w-5 h-5 fill-slate-200" />
           </button>
 
           {/* Large Play/Pause FAB */}
@@ -227,10 +242,19 @@ export const NowPlayingSheet: React.FC<NowPlayingSheetProps> = ({
             )}
           </button>
 
+          {/* Next Station Button */}
+          <button
+            onClick={onNextStation}
+            className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 text-slate-200 flex items-center justify-center hover:bg-slate-800 hover:text-white active:scale-95 transition-all shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            title="Next Station"
+          >
+            <SkipForward className="w-5 h-5 fill-slate-200" />
+          </button>
+
           {/* Sleep Timer Indicator */}
           <button
             onClick={onOpenSleepTimer}
-            className="min-w-[48px] min-h-[48px] flex flex-col items-center justify-center text-slate-400 hover:text-white rounded-xl transition-colors"
+            className="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center text-slate-400 hover:text-white rounded-xl transition-colors"
             title="Sleep Timer"
           >
             <Timer className={`w-5 h-5 ${sleepTimerRemaining ? 'text-amber-400' : ''}`} />

@@ -55,12 +55,13 @@ jobs:
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST_PATH"
           fi
 
-          # Enable background audio by keeping WebView timers active in MainActivity onPause
+          # Enable background audio by keeping WebView active in MainActivity onPause and onStop
           MAIN_ACTIVITY=$(find android -name "MainActivity.java" 2>/dev/null | head -n 1)
           if [ -n "$MAIN_ACTIVITY" ] && [ -f "$MAIN_ACTIVITY" ]; then
             printf '%s\n' \
               'package com.rdiogo.app;' \
               '' \
+              'import android.webkit.WebView;' \
               'import com.getcapacitor.BridgeActivity;' \
               '' \
               'public class MainActivity extends BridgeActivity {' \
@@ -68,7 +69,19 @@ jobs:
               '    public void onPause() {' \
               '        super.onPause();' \
               '        if (getBridge() != null && getBridge().getWebView() != null) {' \
-              '            getBridge().getWebView().resumeTimers();' \
+              '            WebView webView = getBridge().getWebView();' \
+              '            webView.onResume();' \
+              '            webView.resumeTimers();' \
+              '        }' \
+              '    }' \
+              '' \
+              '    @Override' \
+              '    public void onStop() {' \
+              '        super.onStop();' \
+              '        if (getBridge() != null && getBridge().getWebView() != null) {' \
+              '            WebView webView = getBridge().getWebView();' \
+              '            webView.onResume();' \
+              '            webView.resumeTimers();' \
               '        }' \
               '    }' \
               '}' > "$MAIN_ACTIVITY"

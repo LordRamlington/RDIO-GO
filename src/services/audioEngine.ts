@@ -26,6 +26,8 @@ class AudioEngine {
   private currentVolume = 0.9;
   private isMuted = false;
   private mediaSessionCallbacks: MediaSessionCallbacks = {};
+  private playlist: RadioStation[] = [];
+  private stationChangeListeners: Set<(station: RadioStation) => void> = new Set();
   private wakeLock: any = null;
 
   // Web Audio API DSP Nodes for Real Equalizer Audio FX
@@ -223,6 +225,69 @@ class AudioEngine {
     this.setupMediaSessionHandlers();
   }
 
+  public setPlaylist(stations: RadioStation[]) {
+    if (Array.isArray(stations) && stations.length > 0) {
+      this.playlist = stations;
+    }
+  }
+
+  public getPlaylist(): RadioStation[] {
+    return this.playlist;
+  }
+
+  public getCurrentStation(): RadioStation | null {
+    return this.currentStation;
+  }
+
+  public subscribeStationChange(cb: (station: RadioStation) => void): () => void {
+    this.stationChangeListeners.add(cb);
+    return () => this.stationChangeListeners.delete(cb);
+  }
+
+  public playNextStation(): RadioStation | null {
+    if (this.playlist.length === 0) {
+      this.mediaSessionCallbacks.onNext?.();
+      return null;
+    }
+
+    const currentIndex = this.currentStation
+      ? this.playlist.findIndex((s) => s.id === this.currentStation?.id)
+      : -1;
+    const nextIndex = (currentIndex + 1) % this.playlist.length;
+    const nextStation = this.playlist[nextIndex];
+
+    if (nextStation) {
+      this.currentStation = nextStation;
+      this.playStream(nextStation.streamUrl, nextStation);
+      this.stationChangeListeners.forEach((cb) => cb(nextStation));
+      this.mediaSessionCallbacks.onNext?.();
+      return nextStation;
+    }
+    return null;
+  }
+
+  public playPreviousStation(): RadioStation | null {
+    if (this.playlist.length === 0) {
+      this.mediaSessionCallbacks.onPrevious?.();
+      return null;
+    }
+
+    const currentIndex = this.currentStation
+      ? this.playlist.findIndex((s) => s.id === this.currentStation?.id)
+      : 0;
+    const prevIndex = (currentIndex - 1 + this.playlist.length) % this.playlist.length;
+    const prevStation = this.playlist[prevIndex];
+
+    if (prevStation) {
+      this.currentStation = prevStation;
+      this.playStream(prevStation.streamUrl, prevStation);
+      this.stationChangeListeners.forEach((cb) => cb(prevStation));
+      this.mediaSessionCallbacks.onPrevious?.();
+      return prevStation;
+    }
+    return null;
+  }
+
   private setupMediaSessionHandlers() {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
 
@@ -243,11 +308,20 @@ class AudioEngine {
       });
 
       navigator.mediaSession.setActionHandler('previoustrack', () => {
-        this.mediaSessionCallbacks.onPrevious?.();
+        this.playPreviousStation();
       });
 
       navigator.mediaSession.setActionHandler('nexttrack', () => {
-        this.mediaSessionCallbacks.onNext?.();
+        this.playNextStation();
+      });
+
+      // Also register seekbackward and seekforward for devices/car stereos/lockscreens that trigger seek actions
+      navigator.mediaSession.setActionHandler('seekbackward', () => {
+        this.playPreviousStation();
+      });
+
+      navigator.mediaSession.setActionHandler('seekforward', () => {
+        this.playNextStation();
       });
     } catch (e) {
       console.warn('MediaSession action handler notice:', e);

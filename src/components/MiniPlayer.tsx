@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, Loader2, Circle, Radio, ChevronUp } from 'lucide-react';
+import { Play, Pause, Loader2, Circle, Radio, ChevronUp, SkipBack, SkipForward } from 'lucide-react';
 import { RadioStation, PlaybackStatus } from '../types/radio';
 import { StationArtwork } from './StationArtwork';
 
@@ -9,6 +9,8 @@ interface MiniPlayerProps {
   isRecording: boolean;
   recordingSeconds: number;
   onPlayPause: () => void;
+  onNextStation?: () => void;
+  onPreviousStation?: () => void;
   onToggleRecord: () => void;
   onOpenExpandedPlayer: () => void;
 }
@@ -19,6 +21,8 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
   isRecording,
   recordingSeconds,
   onPlayPause,
+  onNextStation,
+  onPreviousStation,
   onToggleRecord,
   onOpenExpandedPlayer,
 }) => {
@@ -75,18 +79,16 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
 
         {/* Right Controls */}
         <div className="flex items-center gap-1 shrink-0">
-          {/* Quick Record Button */}
-          <button
-            onClick={onToggleRecord}
-            title={isRecording ? 'Stop & Save Recording' : 'Record Broadcast'}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 ${
-              isRecording
-                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse'
-                : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800/60'
-            }`}
-          >
-            <Circle className={`w-3.5 h-3.5 ${isRecording ? 'fill-rose-500 text-rose-500' : 'fill-transparent'}`} />
-          </button>
+          {/* Previous Station */}
+          {onPreviousStation && (
+            <button
+              onClick={onPreviousStation}
+              title="Previous Station"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              <SkipBack className="w-3.5 h-3.5 fill-slate-400" />
+            </button>
+          )}
 
           {/* Play/Pause Button */}
           <button
@@ -103,11 +105,35 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
             )}
           </button>
 
+          {/* Next Station */}
+          {onNextStation && (
+            <button
+              onClick={onNextStation}
+              title="Next Station"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              <SkipForward className="w-3.5 h-3.5 fill-slate-400" />
+            </button>
+          )}
+
+          {/* Quick Record Button */}
+          <button
+            onClick={onToggleRecord}
+            title={isRecording ? 'Stop & Save Recording' : 'Record Broadcast'}
+            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 ${
+              isRecording
+                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse'
+                : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800/60'
+            }`}
+          >
+            <Circle className={`w-3.5 h-3.5 ${isRecording ? 'fill-rose-500 text-rose-500' : 'fill-transparent'}`} />
+          </button>
+
           {/* Expand sheet arrow */}
           <button
             onClick={onOpenExpandedPlayer}
             title="Expand Full Player"
-            className="w-6 h-9 flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors"
+            className="w-5 h-8 flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors"
           >
             <ChevronUp className="w-3.5 h-3.5" />
           </button>

@@ -386,30 +386,30 @@ export default function App() {
     }
   };
 
+  // Synchronize station if user skipped tracks via Android notification / lock screen / Bluetooth
+  useEffect(() => {
+    const unsub = audioEngine.subscribeStationChange((newStation) => {
+      setCurrentStation(newStation);
+    });
+    return () => unsub();
+  }, []);
+
   // Next / Previous Station handlers (MediaSession & Android pull-down notification controls)
   const handleNextStation = useCallback(() => {
-    const list = catalogMode === 'curated' ? curatedStations : globalStations;
-    if (list.length === 0) return;
-    const currentIndex = currentStation ? list.findIndex((s) => s.id === currentStation.id) : -1;
-    const nextIndex = (currentIndex + 1) % list.length;
-    const nextStation = list[nextIndex];
-    if (nextStation) {
-      setCurrentStation(nextStation);
-      audioEngine.playStream(nextStation.streamUrl, nextStation);
+    if (isOfflineMode) return;
+    const nextSt = audioEngine.playNextStation();
+    if (nextSt) {
+      setCurrentStation(nextSt);
     }
-  }, [catalogMode, curatedStations, globalStations, currentStation]);
+  }, [isOfflineMode]);
 
   const handlePrevStation = useCallback(() => {
-    const list = catalogMode === 'curated' ? curatedStations : globalStations;
-    if (list.length === 0) return;
-    const currentIndex = currentStation ? list.findIndex((s) => s.id === currentStation.id) : 0;
-    const prevIndex = (currentIndex - 1 + list.length) % list.length;
-    const prevStation = list[prevIndex];
-    if (prevStation) {
-      setCurrentStation(prevStation);
-      audioEngine.playStream(prevStation.streamUrl, prevStation);
+    if (isOfflineMode) return;
+    const prevSt = audioEngine.playPreviousStation();
+    if (prevSt) {
+      setCurrentStation(prevSt);
     }
-  }, [catalogMode, curatedStations, globalStations, currentStation]);
+  }, [isOfflineMode]);
 
   // Connect Android MediaSession callbacks (Pull-down notification controls & lock screen)
   useEffect(() => {
@@ -618,6 +618,20 @@ export default function App() {
     ...globalStations,
   ].filter((s, idx, self) => favorites.includes(s.id) && self.findIndex((x) => x.id === s.id) === idx);
 
+  // Keep audioEngine playlist updated so background controls always know the full list of stations
+  useEffect(() => {
+    const pool =
+      activeTab === 'favorites' && favoriteStationsList.length > 0
+        ? favoriteStationsList
+        : catalogMode === 'curated'
+        ? curatedStations
+        : globalStations.length > 0
+        ? globalStations
+        : curatedStations;
+
+    audioEngine.setPlaylist(pool);
+  }, [activeTab, catalogMode, curatedStations, globalStations, favoriteStationsList]);
+
   return (
     <AndroidFrame
       isPhoneFrame={isPhoneFrame}
@@ -782,6 +796,8 @@ export default function App() {
           sleepTimerRemaining={sleepTimerRemaining}
           onClose={() => setIsExpandedPlayer(false)}
           onPlayPause={handlePlayPause}
+          onNextStation={handleNextStation}
+          onPreviousStation={handlePrevStation}
           onToggleFavorite={() => handleToggleFavorite(currentStation)}
           onToggleRecord={handleToggleRecord}
           onVolumeChange={handleVolumeChange}
@@ -872,6 +888,8 @@ export default function App() {
               isRecording={isRecording}
               recordingSeconds={recordingSeconds}
               onPlayPause={handlePlayPause}
+              onNextStation={handleNextStation}
+              onPreviousStation={handlePrevStation}
               onToggleRecord={handleToggleRecord}
               onOpenExpandedPlayer={() => setIsExpandedPlayer(true)}
             />
