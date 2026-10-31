@@ -184,11 +184,33 @@ public class MainActivity extends BridgeActivity {
                                     }
                                 } catch (Throwable t) {
                                     try {
-                                        Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                        intent.setData(Uri.parse("package:" + getPackageName()));
                                         startActivity(intent);
                                     } catch (Throwable t2) {
-                                        t2.printStackTrace();
+                                        try {
+                                            Intent intent2 = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                                            startActivity(intent2);
+                                        } catch (Throwable t3) {
+                                            t3.printStackTrace();
+                                        }
                                     }
+                                }
+                            }
+                        });
+                    }
+
+                    @JavascriptInterface
+                    public void openAppDetailsSettings() {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                    intent.setData(Uri.parse("package:" + getPackageName()));
+                                    startActivity(intent);
+                                } catch (Throwable t) {
+                                    t.printStackTrace();
                                 }
                             }
                         });
