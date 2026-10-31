@@ -47,6 +47,20 @@ import { AlertCircle, CheckCircle2, WifiOff } from 'lucide-react';
 
 const FAVORITES_STORAGE_KEY = 'rdiogo_favorites';
 const CUSTOM_STATIONS_KEY = 'rdiogo_custom_stations';
+const FIRST_TIME_SCAN_BATCH = CURATED_STATIONS.slice(0, 100);
+
+function requestNotificationPermissionSafely(): void {
+  try {
+    const bridge = (window as any).AndroidRadioBridge;
+    if (bridge && typeof bridge.requestPermission === 'function') {
+      bridge.requestPermission();
+    } else if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  } catch (err) {
+    console.warn('Notification permission request error:', err);
+  }
+}
 
 export default function App() {
   // Station State
@@ -234,6 +248,14 @@ export default function App() {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
+  // Request Android Notification permission on launch for lockscreen and shade controls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      requestNotificationPermissionSafely();
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleInstallPwa = async () => {
     if (deferredPrompt) {
       try {
@@ -380,8 +402,10 @@ export default function App() {
     if (status === 'playing') {
       audioEngine.pause();
     } else if (status === 'paused') {
+      requestNotificationPermissionSafely();
       audioEngine.resume();
     } else {
+      requestNotificationPermissionSafely();
       audioEngine.playStream(currentStation.streamUrl, currentStation);
     }
   };
@@ -444,6 +468,7 @@ export default function App() {
       return;
     }
 
+    requestNotificationPermissionSafely();
     setCurrentStation(station);
     audioEngine.playStream(station.streamUrl, station);
   };
@@ -460,9 +485,11 @@ export default function App() {
       if (status === 'playing') {
         audioEngine.pause();
       } else {
+        requestNotificationPermissionSafely();
         audioEngine.resume();
       }
     } else {
+      requestNotificationPermissionSafely();
       setCurrentStation(station);
       audioEngine.playStream(station.streamUrl, station);
     }
@@ -854,7 +881,7 @@ export default function App() {
       {/* First-Time Install Station Integrity Check Modal */}
       <FirstTimeCheckModal
         isOpen={isFirstTimeScanOpen}
-        stationsToCheck={CURATED_STATIONS.slice(0, 100)}
+        stationsToCheck={FIRST_TIME_SCAN_BATCH}
         onComplete={(activeStations, offlineIds) => {
           setOfflineStationIds(offlineIds);
           if (activeStations.length > 0 && currentStation && offlineIds.has(currentStation.id)) {

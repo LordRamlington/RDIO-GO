@@ -32,62 +32,89 @@ public class MainActivity extends BridgeActivity {
         super.onResume();
         instance = this;
         registerWebBridge();
+        requestNotificationPermission();
         if (getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().resumeTimers();
         }
     }
 
-    private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            requestNotificationPermission();
+        }
+    }
+
+    public void requestNotificationPermission() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+                }
             }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
     private void registerWebBridge() {
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            WebView webView = getBridge().getWebView();
-            webView.addJavascriptInterface(new Object() {
-                @JavascriptInterface
-                public void updatePlayback(final String title, final String subtitle, final boolean isPlaying) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Intent intent = new Intent(MainActivity.this, RadioPlaybackService.class);
-                                intent.setAction(RadioPlaybackService.ACTION_UPDATE);
-                                intent.putExtra("title", title);
-                                intent.putExtra("subtitle", subtitle);
-                                intent.putExtra("isPlaying", isPlaying);
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                    startForegroundService(intent);
-                                } else {
-                                    startService(intent);
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                WebView webView = getBridge().getWebView();
+                webView.addJavascriptInterface(new Object() {
+                    @JavascriptInterface
+                    public void updatePlayback(final String title, final String subtitle, final boolean isPlaying) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    Intent intent = new Intent(MainActivity.this, RadioPlaybackService.class);
+                                    intent.setAction(RadioPlaybackService.ACTION_UPDATE);
+                                    intent.putExtra("title", title);
+                                    intent.putExtra("subtitle", subtitle);
+                                    intent.putExtra("isPlaying", isPlaying);
+                                    if (isPlaying && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        startForegroundService(intent);
+                                    } else {
+                                        startService(intent);
+                                    }
+                                } catch (Throwable t) {
+                                    t.printStackTrace();
                                 }
-                            } catch (Exception e) {
-                                e.printStackTrace();
                             }
-                        }
-                    });
-                }
+                        });
+                    }
 
-                @JavascriptInterface
-                public void stopPlaybackService() {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                Intent intent = new Intent(MainActivity.this, RadioPlaybackService.class);
-                                intent.setAction(RadioPlaybackService.ACTION_STOP);
-                                startService(intent);
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                    @JavascriptInterface
+                    public void stopPlaybackService() {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    Intent intent = new Intent(MainActivity.this, RadioPlaybackService.class);
+                                    intent.setAction(RadioPlaybackService.ACTION_STOP);
+                                    startService(intent);
+                                } catch (Throwable t) {
+                                    t.printStackTrace();
+                                }
                             }
-                        }
-                    });
-                }
-            }, "AndroidRadioBridge");
+                        });
+                    }
+
+                    @JavascriptInterface
+                    public void requestPermission() {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                requestNotificationPermission();
+                            }
+                        });
+                    }
+                }, "AndroidRadioBridge");
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
@@ -101,8 +128,8 @@ public class MainActivity extends BridgeActivity {
                             String js = "if (typeof window !== 'undefined' && window.onNativeMediaAction) { window.onNativeMediaAction('" + action + "'); }";
                             instance.getBridge().getWebView().evaluateJavascript(js, null);
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    } catch (Throwable t) {
+                        t.printStackTrace();
                     }
                 }
             });
@@ -113,10 +140,14 @@ public class MainActivity extends BridgeActivity {
     public void onPause() {
         super.onPause();
         // Keep WebView audio decoding and timers active in background
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            WebView webView = getBridge().getWebView();
-            webView.onResume();
-            webView.resumeTimers();
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                WebView webView = getBridge().getWebView();
+                webView.onResume();
+                webView.resumeTimers();
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
@@ -124,10 +155,14 @@ public class MainActivity extends BridgeActivity {
     public void onStop() {
         super.onStop();
         // Keep WebView active during screen lock
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            WebView webView = getBridge().getWebView();
-            webView.onResume();
-            webView.resumeTimers();
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                WebView webView = getBridge().getWebView();
+                webView.onResume();
+                webView.resumeTimers();
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 

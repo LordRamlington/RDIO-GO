@@ -47,10 +47,18 @@ jobs:
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
-            # Ensure Internet, WakeLock, Network State, Wi-Fi State, Notifications, and Media Playback permissions
-            if ! grep -q "android.permission.INTERNET" "$MANIFEST_PATH"; then
-              sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST_PATH"
-            fi
+            for PERM in \
+              "android.permission.INTERNET" \
+              "android.permission.WAKE_LOCK" \
+              "android.permission.ACCESS_NETWORK_STATE" \
+              "android.permission.ACCESS_WIFI_STATE" \
+              "android.permission.FOREGROUND_SERVICE" \
+              "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" \
+              "android.permission.POST_NOTIFICATIONS"; do
+              if ! grep -q "$PERM" "$MANIFEST_PATH"; then
+                sed -i "/<manifest/a \    <uses-permission android:name=\"$PERM\" />" "$MANIFEST_PATH"
+              fi
+            done
             # Allow cleartext HTTP audio streams for international radio feeds
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST_PATH"
             # Register native RadioPlaybackService with mediaPlayback foregroundServiceType

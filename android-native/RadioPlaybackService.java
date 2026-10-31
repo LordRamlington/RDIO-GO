@@ -36,9 +36,20 @@ public class RadioPlaybackService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        createNotificationChannel();
-        initMediaSession();
-        initLocks();
+        try {
+            createNotificationChannel();
+            initMediaSession();
+            initLocks();
+            // Start foreground immediately upon creation to strictly fulfill Android ForegroundService contract
+            Notification notification = buildNotification();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+            } else {
+                startForeground(NOTIFICATION_ID, notification);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 
     private void createNotificationChannel() {
@@ -60,38 +71,41 @@ public class RadioPlaybackService extends Service {
     }
 
     private void initMediaSession() {
-        mediaSession = new MediaSession(this, "RDIOGO_MediaSession");
-        mediaSession.setCallback(new MediaSession.Callback() {
-            @Override
-            public void onPlay() {
-                MainActivity.sendMediaActionToWeb("play");
-                updateState(true);
-            }
+        try {
+            mediaSession = new MediaSession(this, "RDIOGO_MediaSession");
+            mediaSession.setCallback(new MediaSession.Callback() {
+                @Override
+                public void onPlay() {
+                    MainActivity.sendMediaActionToWeb("play");
+                    updateState(true);
+                }
 
-            @Override
-            public void onPause() {
-                MainActivity.sendMediaActionToWeb("pause");
-                updateState(false);
-            }
+                @Override
+                public void onPause() {
+                    MainActivity.sendMediaActionToWeb("pause");
+                    updateState(false);
+                }
 
-            @Override
-            public void onSkipToNext() {
-                MainActivity.sendMediaActionToWeb("next");
-            }
+                @Override
+                public void onSkipToNext() {
+                    MainActivity.sendMediaActionToWeb("next");
+                }
 
-            @Override
-            public void onSkipToPrevious() {
-                MainActivity.sendMediaActionToWeb("prev");
-            }
+                @Override
+                public void onSkipToPrevious() {
+                    MainActivity.sendMediaActionToWeb("prev");
+                }
 
-            @Override
-            public void onStop() {
-                MainActivity.sendMediaActionToWeb("pause");
-                updateState(false);
-                stopForeground(false);
-            }
-        });
-        mediaSession.setActive(true);
+                @Override
+                public void onStop() {
+                    MainActivity.sendMediaActionToWeb("pause");
+                    updateState(false);
+                }
+            });
+            mediaSession.setActive(true);
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 
     private void initLocks() {
@@ -107,8 +121,8 @@ public class RadioPlaybackService extends Service {
                 wifiLock = wm.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "RDIOGO:RadioStreamWifiLock");
                 wifiLock.setReferenceCounted(false);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
@@ -120,8 +134,8 @@ public class RadioPlaybackService extends Service {
             if (wifiLock != null && !wifiLock.isHeld()) {
                 wifiLock.acquire();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
@@ -133,42 +147,48 @@ public class RadioPlaybackService extends Service {
             if (wifiLock != null && wifiLock.isHeld()) {
                 wifiLock.release();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null) {
-            String action = intent.getAction();
-            if (ACTION_UPDATE.equals(action)) {
-                String title = intent.getStringExtra("title");
-                String subtitle = intent.getStringExtra("subtitle");
-                boolean playing = intent.getBooleanExtra("isPlaying", false);
-                if (title != null && !title.isEmpty()) currentTitle = title;
-                if (subtitle != null && !subtitle.isEmpty()) currentSubtitle = subtitle;
-                isPlaying = playing;
+        try {
+            if (intent != null) {
+                String action = intent.getAction();
+                if (ACTION_UPDATE.equals(action)) {
+                    String title = intent.getStringExtra("title");
+                    String subtitle = intent.getStringExtra("subtitle");
+                    boolean playing = intent.getBooleanExtra("isPlaying", false);
+                    if (title != null && !title.isEmpty()) currentTitle = title;
+                    if (subtitle != null && !subtitle.isEmpty()) currentSubtitle = subtitle;
+                    isPlaying = playing;
+                    updateNotificationAndForeground();
+                } else if (ACTION_PLAY.equals(action)) {
+                    MainActivity.sendMediaActionToWeb("play");
+                    isPlaying = true;
+                    updateNotificationAndForeground();
+                } else if (ACTION_PAUSE.equals(action)) {
+                    MainActivity.sendMediaActionToWeb("pause");
+                    isPlaying = false;
+                    updateNotificationAndForeground();
+                } else if (ACTION_NEXT.equals(action)) {
+                    MainActivity.sendMediaActionToWeb("next");
+                } else if (ACTION_PREV.equals(action)) {
+                    MainActivity.sendMediaActionToWeb("prev");
+                } else if (ACTION_STOP.equals(action)) {
+                    isPlaying = false;
+                    releaseLocks();
+                    stopForeground(true);
+                    stopSelf();
+                    return START_NOT_STICKY;
+                }
+            } else {
                 updateNotificationAndForeground();
-            } else if (ACTION_PLAY.equals(action)) {
-                MainActivity.sendMediaActionToWeb("play");
-                isPlaying = true;
-                updateNotificationAndForeground();
-            } else if (ACTION_PAUSE.equals(action)) {
-                MainActivity.sendMediaActionToWeb("pause");
-                isPlaying = false;
-                updateNotificationAndForeground();
-            } else if (ACTION_NEXT.equals(action)) {
-                MainActivity.sendMediaActionToWeb("next");
-            } else if (ACTION_PREV.equals(action)) {
-                MainActivity.sendMediaActionToWeb("prev");
-            } else if (ACTION_STOP.equals(action)) {
-                isPlaying = false;
-                releaseLocks();
-                stopForeground(true);
-                stopSelf();
-                return START_NOT_STICKY;
             }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
         return START_STICKY;
     }
@@ -179,40 +199,37 @@ public class RadioPlaybackService extends Service {
     }
 
     private void updateNotificationAndForeground() {
-        if (isPlaying) {
-            acquireLocks();
-        } else {
-            releaseLocks();
-        }
+        try {
+            if (isPlaying) {
+                acquireLocks();
+            } else {
+                releaseLocks();
+            }
 
-        // Update MediaSession PlaybackState
-        if (mediaSession != null) {
-            int state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
-            PlaybackState.Builder pb = new PlaybackState.Builder()
-                .setActions(
-                    PlaybackState.ACTION_PLAY |
-                    PlaybackState.ACTION_PAUSE |
-                    PlaybackState.ACTION_SKIP_TO_NEXT |
-                    PlaybackState.ACTION_SKIP_TO_PREVIOUS |
-                    PlaybackState.ACTION_STOP
-                )
-                .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1.0f);
-            mediaSession.setPlaybackState(pb.build());
-        }
+            // Update MediaSession PlaybackState
+            if (mediaSession != null) {
+                int state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
+                PlaybackState.Builder pb = new PlaybackState.Builder()
+                    .setActions(
+                        PlaybackState.ACTION_PLAY |
+                        PlaybackState.ACTION_PAUSE |
+                        PlaybackState.ACTION_SKIP_TO_NEXT |
+                        PlaybackState.ACTION_SKIP_TO_PREVIOUS |
+                        PlaybackState.ACTION_STOP
+                    )
+                    .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1.0f);
+                mediaSession.setPlaybackState(pb.build());
+            }
 
-        Notification notification = buildNotification();
+            Notification notification = buildNotification();
 
-        if (isPlaying) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
             } else {
                 startForeground(NOTIFICATION_ID, notification);
             }
-        } else {
-            NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (manager != null) {
-                manager.notify(NOTIFICATION_ID, notification);
-            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
@@ -242,8 +259,8 @@ public class RadioPlaybackService extends Service {
         nextIntent.setAction(ACTION_NEXT);
         PendingIntent pNext = PendingIntent.getService(this, 3, nextIntent, pIntentFlags);
 
-        // App Icon for small icon
-        int smallIcon = getApplicationInfo().icon != 0 ? getApplicationInfo().icon : android.R.drawable.ic_media_play;
+        // Built-in standard Android system media play icon (safe across all devices)
+        int smallIcon = android.R.drawable.ic_media_play;
 
         Notification.Builder builder;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -281,11 +298,15 @@ public class RadioPlaybackService extends Service {
 
     @Override
     public void onDestroy() {
-        releaseLocks();
-        if (mediaSession != null) {
-            mediaSession.setActive(false);
-            mediaSession.release();
-            mediaSession = null;
+        try {
+            releaseLocks();
+            if (mediaSession != null) {
+                mediaSession.setActive(false);
+                mediaSession.release();
+                mediaSession = null;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
         super.onDestroy();
     }
