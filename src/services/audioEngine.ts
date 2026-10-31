@@ -135,7 +135,7 @@ class AudioEngine {
       });
     }
 
-    // Register Native Android Notification Action Listener
+    // Register Native Android Notification Action Listener & Background Heartbeat
     if (typeof window !== 'undefined') {
       (window as any).onNativeMediaAction = (action: string) => {
         console.info('Native Android media action received in web engine:', action);
@@ -149,6 +149,26 @@ class AudioEngine {
           this.playPreviousStation();
         }
       };
+
+      (window as any).keepAudioAlive = () => {
+        if (this.currentStatus === 'playing') {
+          if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume().catch(() => {});
+          }
+          if (this.audio && this.audio.paused && !this.isMuted) {
+            this.audio.play().catch(() => {});
+          }
+        }
+      };
+
+      // Periodic watchdog to prevent Android Chromium from suspending AudioContext during screen off
+      setInterval(() => {
+        if (this.currentStatus === 'playing') {
+          if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume().catch(() => {});
+          }
+        }
+      }, 2000);
     }
 
     this.setupMediaSessionHandlers();
@@ -185,6 +205,11 @@ class AudioEngine {
 
       if (!this.audioContext) {
         this.audioContext = new AudioCtx();
+        this.audioContext.onstatechange = () => {
+          if (this.audioContext && this.audioContext.state === 'suspended' && this.currentStatus === 'playing') {
+            this.audioContext.resume().catch(() => {});
+          }
+        };
       }
 
       if (this.audioContext.state === 'suspended') {

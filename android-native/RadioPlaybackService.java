@@ -8,6 +8,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
 import android.net.wifi.WifiManager;
@@ -16,7 +17,7 @@ import android.os.IBinder;
 import android.os.PowerManager;
 
 public class RadioPlaybackService extends Service {
-    public static final String CHANNEL_ID = "rdio_go_stream_channel";
+    public static final String CHANNEL_ID = "rdio_go_media_stream_v3";
     public static final int NOTIFICATION_ID = 4040;
 
     public static final String ACTION_UPDATE = "com.rdiogo.app.action.UPDATE";
@@ -57,10 +58,12 @@ public class RadioPlaybackService extends Service {
             NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
                 "RDIO-GO Radio Playback",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             );
             channel.setDescription("Shows active live radio playback controls in notification shade");
             channel.setShowBadge(false);
+            channel.setSound(null, null);
+            channel.enableVibration(false);
             channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
             NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -73,6 +76,7 @@ public class RadioPlaybackService extends Service {
     private void initMediaSession() {
         try {
             mediaSession = new MediaSession(this, "RDIOGO_MediaSession");
+            mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
             mediaSession.setCallback(new MediaSession.Callback() {
                 @Override
                 public void onPlay() {
@@ -129,7 +133,7 @@ public class RadioPlaybackService extends Service {
     private void acquireLocks() {
         try {
             if (wakeLock != null && !wakeLock.isHeld()) {
-                wakeLock.acquire(12 * 60 * 60 * 1000L); // 12 hours safety timeout
+                wakeLock.acquire(12 * 60 * 60 * 1000L); // 12 hours continuous playback safety limit
             }
             if (wifiLock != null && !wifiLock.isHeld()) {
                 wifiLock.acquire();
@@ -206,13 +210,20 @@ public class RadioPlaybackService extends Service {
                 releaseLocks();
             }
 
-            // Update MediaSession PlaybackState
+            // Update MediaSession PlaybackState and MediaMetadata for Android 11+ SystemUI shade
             if (mediaSession != null) {
+                MediaMetadata.Builder mb = new MediaMetadata.Builder()
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, currentTitle)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, currentSubtitle)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, "RDIO-GO Radio");
+                mediaSession.setMetadata(mb.build());
+
                 int state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
                 PlaybackState.Builder pb = new PlaybackState.Builder()
                     .setActions(
                         PlaybackState.ACTION_PLAY |
                         PlaybackState.ACTION_PAUSE |
+                        PlaybackState.ACTION_PLAY_PAUSE |
                         PlaybackState.ACTION_SKIP_TO_NEXT |
                         PlaybackState.ACTION_SKIP_TO_PREVIOUS |
                         PlaybackState.ACTION_STOP
@@ -259,8 +270,11 @@ public class RadioPlaybackService extends Service {
         nextIntent.setAction(ACTION_NEXT);
         PendingIntent pNext = PendingIntent.getService(this, 3, nextIntent, pIntentFlags);
 
-        // Built-in standard Android system media play icon (safe across all devices)
-        int smallIcon = android.R.drawable.ic_media_play;
+        // Application icon from package is required by SystemUI
+        int smallIcon = getApplicationInfo().icon;
+        if (smallIcon == 0) {
+            smallIcon = android.R.drawable.sym_def_app_icon;
+        }
 
         Notification.Builder builder;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

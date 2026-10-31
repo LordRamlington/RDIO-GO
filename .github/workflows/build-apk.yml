@@ -54,7 +54,8 @@ jobs:
               "android.permission.ACCESS_WIFI_STATE" \
               "android.permission.FOREGROUND_SERVICE" \
               "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" \
-              "android.permission.POST_NOTIFICATIONS"; do
+              "android.permission.POST_NOTIFICATIONS" \
+              "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"; do
               if ! grep -q "$PERM" "$MANIFEST_PATH"; then
                 sed -i "/<manifest/a \    <uses-permission android:name=\"$PERM\" />" "$MANIFEST_PATH"
               fi

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sliders, Timer, Sparkles, X, Volume2, RotateCcw } from 'lucide-react';
+import { Sliders, Timer, Sparkles, X, Volume2, RotateCcw, Zap, BatteryCharging } from 'lucide-react';
 import { EqualizerSettings } from '../types/radio';
 
 interface EqualizerModalProps {
@@ -8,6 +8,7 @@ interface EqualizerModalProps {
   onUpdateSettings: (settings: EqualizerSettings) => void;
   onSetSleepTimer: (minutes: number | null) => void;
   onOpenPrivacyPolicy?: () => void;
+  onOpenBatterySettings?: () => void;
   onClose?: () => void;
   isSheet?: boolean;
 }
@@ -18,6 +19,7 @@ export const EqualizerModal: React.FC<EqualizerModalProps> = ({
   onUpdateSettings,
   onSetSleepTimer,
   onOpenPrivacyPolicy,
+  onOpenBatterySettings,
   onClose,
   isSheet = false,
 }) => {
@@ -191,6 +193,30 @@ export const EqualizerModal: React.FC<EqualizerModalProps> = ({
             Cancel Active Sleep Timer
           </button>
         )}
+      </div>
+
+      {/* Background Playback & Deep Sleep Exemption */}
+      <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Zap className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-slate-100">Deep Sleep & Battery Saver</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Prevent Android from pausing radio after 2-3 mins
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenBatterySettings}
+            className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/40 transition-colors shrink-0"
+          >
+            Configure
+          </button>
+        </div>
       </div>
 
       {onOpenPrivacyPolicy && (

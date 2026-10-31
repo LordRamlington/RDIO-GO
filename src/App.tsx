@@ -41,6 +41,7 @@ import { FirstTimeCheckModal } from './components/FirstTimeCheckModal';
 import { AdBanner } from './components/AdBanner';
 import { MonetizationModal } from './components/MonetizationModal';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
+import { BatteryOptimizationModal } from './components/BatteryOptimizationModal';
 import { AD_CONFIG, getAdMobPublisherId, getAdMobSlotId } from './config/adConfig';
 import { saveRecentSearch } from './utils/recentSearches';
 import { AlertCircle, CheckCircle2, WifiOff } from 'lucide-react';
@@ -112,6 +113,7 @@ export default function App() {
   const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isBatteryModalOpen, setIsBatteryModalOpen] = useState<boolean>(false);
 
   // Monetization & Ad State
   const [isAdsEnabled, setIsAdsEnabled] = useState<boolean>(() => {
@@ -845,6 +847,10 @@ export default function App() {
             setIsEqualizerSheetOpen(false);
             setIsPrivacyModalOpen(true);
           }}
+          onOpenBatterySettings={() => {
+            setIsEqualizerSheetOpen(false);
+            setIsBatteryModalOpen(true);
+          }}
           onClose={() => setIsEqualizerSheetOpen(false)}
           isSheet={true}
         />
@@ -888,8 +894,28 @@ export default function App() {
             setCurrentStation(activeStations[0]);
           }
           showToast(`Integrity check complete: ${activeStations.length} of 100 active streams verified!`);
+
+          // Offer unrestricted battery optimization for continuous background audio
+          try {
+            const hasBridge = typeof window !== 'undefined' && Boolean((window as any).AndroidRadioBridge);
+            const prompted = localStorage.getItem('rdiogo_battery_opt_prompted');
+            if (hasBridge && !prompted) {
+              setTimeout(() => {
+                setIsBatteryModalOpen(true);
+              }, 600);
+            }
+          } catch {
+            // ignore
+          }
         }}
         onClose={() => setIsFirstTimeScanOpen(false)}
+      />
+
+      {/* Deep Sleep Prevention & Battery Optimization Modal */}
+      <BatteryOptimizationModal
+        isOpen={isBatteryModalOpen}
+        onClose={() => setIsBatteryModalOpen(false)}
+        onSuccess={() => showToast('Unrestricted background playback enabled!')}
       />
 
       {/* Monetization & Google AdMob Setup Modal */}
