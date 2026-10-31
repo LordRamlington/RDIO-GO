@@ -64,12 +64,12 @@ jobs:
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST_PATH"
             # Register native RadioPlaybackService with mediaPlayback foregroundServiceType
             if ! grep -q "RadioPlaybackService" "$MANIFEST_PATH"; then
-              sed -i '/<\/application>/i \        <service android:name="com.rdiogo.app.RadioPlaybackService" android:foregroundServiceType="mediaPlayback" android:exported="false" />' "$MANIFEST_PATH"
+              sed -i '/<\/application>/i \        <service android:name="com.cuveyapps.rdiogo.RadioPlaybackService" android:foregroundServiceType="mediaPlayback" android:exported="false" />' "$MANIFEST_PATH"
             fi
           fi
 
           # Copy native Java source files into Android app package
-          TARGET_JAVA_DIR="android/app/src/main/java/com/rdiogo/app"
+          TARGET_JAVA_DIR="android/app/src/main/java/com/cuveyapps/rdiogo"
           mkdir -p "$TARGET_JAVA_DIR"
           cp android-native/MainActivity.java "$TARGET_JAVA_DIR/MainActivity.java"
           cp android-native/RadioPlaybackService.java "$TARGET_JAVA_DIR/RadioPlaybackService.java"

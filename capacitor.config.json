@@ -1,5 +1,5 @@
 {
-  "appId": "com.rdiogo.app",
+  "appId": "com.cuveyapps.rdiogo",
   "appName": "RDIO-GO",
   "webDir": "dist",
   "bundledWebRuntime": false,

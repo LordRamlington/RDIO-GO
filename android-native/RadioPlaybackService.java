@@ -1,4 +1,4 @@
-package com.rdiogo.app;
+package com.cuveyapps.rdiogo;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -20,12 +20,12 @@ public class RadioPlaybackService extends Service {
     public static final String CHANNEL_ID = "rdio_go_media_stream_v3";
     public static final int NOTIFICATION_ID = 4040;
 
-    public static final String ACTION_UPDATE = "com.rdiogo.app.action.UPDATE";
-    public static final String ACTION_PLAY   = "com.rdiogo.app.action.PLAY";
-    public static final String ACTION_PAUSE  = "com.rdiogo.app.action.PAUSE";
-    public static final String ACTION_NEXT   = "com.rdiogo.app.action.NEXT";
-    public static final String ACTION_PREV   = "com.rdiogo.app.action.PREV";
-    public static final String ACTION_STOP   = "com.rdiogo.app.action.STOP";
+    public static final String ACTION_UPDATE = "com.cuveyapps.rdiogo.action.UPDATE";
+    public static final String ACTION_PLAY   = "com.cuveyapps.rdiogo.action.PLAY";
+    public static final String ACTION_PAUSE  = "com.cuveyapps.rdiogo.action.PAUSE";
+    public static final String ACTION_NEXT   = "com.cuveyapps.rdiogo.action.NEXT";
+    public static final String ACTION_PREV   = "com.cuveyapps.rdiogo.action.PREV";
+    public static final String ACTION_STOP   = "com.cuveyapps.rdiogo.action.STOP";
 
     private MediaSession mediaSession;
     private PowerManager.WakeLock wakeLock;

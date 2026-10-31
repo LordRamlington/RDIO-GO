@@ -1,4 +1,4 @@
-package com.rdiogo.app;
+package com.cuveyapps.rdiogo;
 
 import android.Manifest;
 import android.content.Context;

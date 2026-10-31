@@ -10,7 +10,7 @@ interface InstallModalProps {
 
 export const MANIFEST_JSON_STRING = JSON.stringify(
   {
-    id: 'com.rdiogo.app',
+    id: 'com.cuveyapps.rdiogo',
     name: 'RDIO-GO Live Radio',
     short_name: 'RDIO-GO',
     description: 'RDIO-GO is an Android live radio streaming app featuring 40,000+ categorized stations worldwide, real-time audio visualizer, sleep timer, and offline broadcast recording.',
@@ -132,7 +132,7 @@ export const InstallModal: React.FC<InstallModalProps> = ({
     { title: 'Screenshots', desc: 'Added 720x1280 narrow mobile and 1280x720 wide screenshots', status: 'Implemented' },
     { title: 'Title Bar Theme Color', desc: 'Configured native dark theme_color #131318 for Android status bars', status: 'Implemented' },
     { title: 'Device Orientation', desc: 'Locked to portrait for native Android handheld experience', status: 'Implemented' },
-    { title: 'Application ID', desc: 'Set unique Android identifier com.rdiogo.app', status: 'Implemented' },
+    { title: 'Application ID', desc: 'Set unique Android identifier com.cuveyapps.rdiogo', status: 'Implemented' },
   ];
 
   return (
