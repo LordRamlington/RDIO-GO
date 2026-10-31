@@ -93,23 +93,27 @@ jobs:
           cd ..
           cp android/app/build/outputs/apk/debug/app-debug.apk ./RDIO-GO.apk
 
-      - name: Generate Release Keystore and Build Signed App Bundle (.aab) for Google Play
+      - name: Build and Sign Production App Bundle (.aab) for Google Play
         run: |
-          KEYSTORE="release.keystore"
+          KEYSTORE="android-release.keystore"
           ALIAS="rdiogo"
           STOREPASS="rdio_go_production_key_2026"
 
-          # Generate 2048-bit RSA release signing key
-          keytool -genkey -v -keystore "$KEYSTORE" -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "$STOREPASS" -keypass "$STOREPASS" \
-            -dname "CN=RDIO-GO, OU=App, O=RDIO-GO, L=London, ST=London, C=GB"
+          # If permanent keystore is missing for any reason, generate one
+          if [ ! -f "$KEYSTORE" ]; then
+            keytool -genkey -v -keystore "$KEYSTORE" -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$STOREPASS" -keypass "$STOREPASS" \
+              -dname "CN=RDIO-GO, OU=Audio, O=CuveyApps, L=London, ST=London, C=GB"
+            keytool -export -rfc -keystore "$KEYSTORE" -alias "$ALIAS" -file upload_certificate.pem \
+              -storepass "$STOREPASS"
+          fi
 
           # Compile Android App Bundle
           cd android
           ./gradlew bundleRelease --no-daemon --stacktrace
           cd ..
 
-          # Sign the App Bundle with jarsigner
+          # Sign the App Bundle with jarsigner using the permanent keystore
           AAB_FILE=$(find android/app/build/outputs/bundle -name "*.aab" | head -n 1)
           if [ -f "$AAB_FILE" ]; then
             jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
@@ -118,17 +122,18 @@ jobs:
             cp "$AAB_FILE" ./RDIO-GO.aab
           fi
 
-      - name: Upload APK and AAB to GitHub Artifacts
+      - name: Upload APK, AAB and Certificate to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: RDIO-GO-Release-Assets
           path: |
             ./RDIO-GO.apk
             ./RDIO-GO.aab
-            ./release.keystore
+            ./android-release.keystore
+            ./upload_certificate.pem
           if-no-files-found: warn
 
-      - name: Publish Direct APK & Google Play AAB to GitHub Releases
+      - name: Publish Direct APK, Google Play AAB & Certificate to GitHub Releases
         uses: softprops/action-gh-release@v2
         continue-on-error: true
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
@@ -138,9 +143,11 @@ jobs:
           body: |
             ### RDIO-GO Android Production Release Assets
             - **Google Play Store**: Download `RDIO-GO.aab` and upload directly to [Google Play Console](https://play.google.com/console).
+            - **Play Console Key Reset**: If Google Play asks for your upload key certificate, upload `upload_certificate.pem`.
             - **Direct Phone Test**: Download `RDIO-GO.apk` to test directly on your Android phone.
           files: |
             ./RDIO-GO.apk
             ./RDIO-GO.aab
+            ./upload_certificate.pem
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
