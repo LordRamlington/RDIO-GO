@@ -53,7 +53,6 @@ export const BatteryOptimizationModal: React.FC<BatteryOptimizationModalProps> =
     }
 
     onSuccess?.();
-    // Do NOT auto-close with setTimeout! Keep the dialog open until the user clicks "Done" or dismisses it.
   };
 
   const handleOpenAppDetails = () => {
@@ -89,7 +88,7 @@ export const BatteryOptimizationModal: React.FC<BatteryOptimizationModalProps> =
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
         {/* Glow backdrop */}
         <div className="absolute -top-12 -right-12 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -118,87 +117,80 @@ export const BatteryOptimizationModal: React.FC<BatteryOptimizationModalProps> =
           </button>
         </div>
 
-        {!hasOpenedSettings ? (
-          <>
-            <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Android automatically pauses radio streams after <span className="font-semibold text-amber-300">2 to 3 minutes</span> when the screen is locked to save battery.
-            </p>
+        <p className="text-xs text-slate-300 leading-relaxed mb-4">
+          Android automatically puts radio streams to sleep after <span className="font-semibold text-amber-300">2 to 3 minutes</span> when the screen is locked to save battery.
+        </p>
 
-            <div className="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-2 mb-5">
-              <div className="flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="text-[11px] text-slate-300">
-                  <span className="font-semibold text-white">Unrestricted Battery Mode:</span> Keeps broadcast streams and lockscreen controls active 24/7 without Android putting the app to sleep.
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div className="text-[11px] text-slate-300">
-                  <span className="font-semibold text-white">Notification Controls:</span> Ensures the media controls in the Android notification shade remain responsive in the background.
-                </div>
-              </div>
+        {/* Mode Guide Card */}
+        <div className="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-2.5 mb-4">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Required Android Battery Mode:
+          </div>
+
+          <div className="p-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 flex items-start gap-2.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0 mt-1 shadow-sm shadow-emerald-400/50" />
+            <div className="text-[11px]">
+              <span className="font-bold text-emerald-300">Unrestricted (Select this): </span>
+              <span className="text-slate-300">Allows RDIO-GO to stream 24/7 in the background without interruptions.</span>
             </div>
+          </div>
 
-            {isIgnored && (
-              <div className="flex items-center justify-center gap-2 p-3 bg-emerald-950/60 border border-emerald-500/40 rounded-2xl text-emerald-300 text-xs font-medium mb-4">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Unrestricted battery mode is already active!</span>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2.5">
-              <button
-                onClick={handleOpenBatterySettings}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-[0.98] text-slate-950 font-bold text-sm rounded-2xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Zap className="w-4 h-4 fill-slate-950" />
-                <span>Open Android Battery Settings</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={handleDismiss}
-                className="w-full py-2.5 px-4 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors text-center"
-              >
-                Not Now (Keep Standard Battery Optimization)
-              </button>
+          <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800 flex items-start gap-2.5 opacity-65">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 mt-1" />
+            <div className="text-[10px]">
+              <span className="font-semibold text-amber-300">Optimized (Default): </span>
+              <span className="text-slate-400">Android cuts audio and network sockets after 2-3 minutes.</span>
             </div>
-          </>
-        ) : (
-          <>
-            <div className="p-4 bg-slate-950/90 rounded-2xl border border-emerald-500/40 mb-4 space-y-2.5">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wide">
-                <Settings className="w-4 h-4" />
-                <span>Android Settings Triggered</span>
-              </div>
-              <p className="text-xs text-slate-200 leading-relaxed">
-                If the Android system prompt appeared on your screen:
+          </div>
+        </div>
+
+        {hasOpenedSettings && (
+          <div className="p-3 bg-emerald-950/70 border border-emerald-500/50 rounded-2xl text-emerald-200 text-xs mb-4 flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-white">Opening Android Settings...</p>
+              <p className="text-[11px] text-emerald-300 mt-0.5">
+                If the screen opened, tap <strong className="text-white">Unrestricted</strong>. Then return here and tap Done.
               </p>
-              <div className="text-[11px] text-slate-300 space-y-1.5 pl-2 border-l-2 border-emerald-500/50">
-                <div>1. Tap <strong className="text-emerald-300">Allow</strong> (or choose <strong className="text-emerald-300">Unrestricted</strong> in App Battery Usage).</div>
-                <div>2. Return here and tap <strong className="text-white">Done & Continue</strong> below.</div>
-              </div>
             </div>
-
-            <div className="flex flex-col gap-2.5">
-              <button
-                onClick={handleComplete}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-[0.98] text-slate-950 font-bold text-sm rounded-2xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Done & Continue to RDIO-GO</span>
-              </button>
-
-              <button
-                onClick={handleOpenAppDetails}
-                className="w-full py-2.5 px-4 bg-slate-800/80 hover:bg-slate-700/80 text-xs font-semibold text-slate-200 rounded-xl flex items-center justify-center gap-2 transition-colors border border-slate-700/60"
-              >
-                <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                <span>Re-open Android App Settings</span>
-              </button>
-            </div>
-          </>
+          </div>
         )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-2.5">
+          <button
+            onClick={handleOpenBatterySettings}
+            className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-[0.98] text-slate-950 font-bold text-sm rounded-2xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+          >
+            <Zap className="w-4 h-4 fill-slate-950" />
+            <span>{hasOpenedSettings ? 'Re-open Battery Options Screen' : 'Open Android Battery Options'}</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={handleOpenAppDetails}
+            className="w-full py-2.5 px-4 bg-slate-800/80 hover:bg-slate-700/80 text-xs font-semibold text-slate-200 rounded-xl flex items-center justify-center gap-2 transition-colors border border-slate-700/60"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+            <span>Open via App Info Settings Page</span>
+          </button>
+
+          {hasOpenedSettings ? (
+            <button
+              onClick={handleComplete}
+              className="w-full py-2.5 px-4 bg-slate-800 text-xs font-bold text-white hover:bg-slate-700 rounded-xl transition-colors text-center mt-1"
+            >
+              Done & Return to RDIO-GO
+            </button>
+          ) : (
+            <button
+              onClick={handleDismiss}
+              className="w-full py-2 px-4 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors text-center"
+            >
+              Not Now (Keep Default Battery Saver)
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

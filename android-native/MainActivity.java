@@ -171,30 +171,48 @@ public class MainActivity extends BridgeActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
+                                // 1. Try modern Android 12+ direct App Battery Usage screen (shows Unrestricted / Optimized / Restricted)
+                                try {
+                                    Intent intent = new Intent("android.settings.APP_BATTERY_USAGE");
+                                    intent.setData(Uri.parse("package:" + getPackageName()));
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(intent);
+                                    return;
+                                } catch (Throwable t1) {
+                                    // Fall through
+                                }
+
+                                // 2. Try direct App Details Settings (App Info -> Battery -> Unrestricted)
+                                try {
+                                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                    intent.setData(Uri.parse("package:" + getPackageName()));
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(intent);
+                                    return;
+                                } catch (Throwable t2) {
+                                    // Fall through
+                                }
+
+                                // 3. Try legacy REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
                                 try {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-                                        if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
-                                            Intent intent = new Intent();
-                                            intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                                            intent.setData(Uri.parse("package:" + getPackageName()));
-                                            startActivity(intent);
-                                            return;
-                                        }
-                                    }
-                                } catch (Throwable t) {
-                                    try {
-                                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
                                         intent.setData(Uri.parse("package:" + getPackageName()));
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                         startActivity(intent);
-                                    } catch (Throwable t2) {
-                                        try {
-                                            Intent intent2 = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
-                                            startActivity(intent2);
-                                        } catch (Throwable t3) {
-                                            t3.printStackTrace();
-                                        }
+                                        return;
                                     }
+                                } catch (Throwable t3) {
+                                    // Fall through
+                                }
+
+                                // 4. Fallback to general Battery Optimization settings list
+                                try {
+                                    Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(intent);
+                                } catch (Throwable t4) {
+                                    t4.printStackTrace();
                                 }
                             }
                         });
@@ -208,6 +226,7 @@ public class MainActivity extends BridgeActivity {
                                 try {
                                     Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                                     intent.setData(Uri.parse("package:" + getPackageName()));
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                     startActivity(intent);
                                 } catch (Throwable t) {
                                     t.printStackTrace();
