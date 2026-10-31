@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ExternalLink } from 'lucide-react';
 
 interface AdBannerProps {
@@ -18,6 +18,9 @@ export const AdBanner: React.FC<AdBannerProps> = ({
 }) => {
   const [adIndex, setAdIndex] = useState(0);
   const [impressionCount, setImpressionCount] = useState(1);
+  const [hasAdError, setHasAdError] = useState(false);
+  const adRef = useRef<HTMLModElement | null>(null);
+  const adPushedRef = useRef(false);
 
   // Sample compliant test ads following Google AdMob standard formats
   const sampleAds = [
@@ -61,13 +64,13 @@ export const AdBanner: React.FC<AdBannerProps> = ({
 
   // Rotate test ads every 30 seconds (standard AdMob refresh rate)
   useEffect(() => {
-    if (!isTestMode) return;
+    if (!isTestMode && !hasAdError) return;
     const interval = setInterval(() => {
       setAdIndex((prev) => (prev + 1) % sampleAds.length);
       setImpressionCount((prev) => prev + 1);
     }, 30000);
     return () => clearInterval(interval);
-  }, [isTestMode, sampleAds.length]);
+  }, [isTestMode, hasAdError, sampleAds.length]);
 
   // Normalize AdMob formats (handles "ca-app-pub-XXXX/YYYY" or "ca-app-pub-XXXX")
   let normalizedClient = publisherId.trim();
@@ -83,23 +86,58 @@ export const AdBanner: React.FC<AdBannerProps> = ({
 
   // Load real Google AdSense / AdMob script if Publisher ID is provided and not in test mode
   useEffect(() => {
-    if (!isTestMode && normalizedClient && typeof window !== 'undefined') {
-      try {
-        const scriptId = 'google-adsense-script';
-        if (!document.getElementById(scriptId)) {
-          const script = document.createElement('script');
-          script.id = scriptId;
-          script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${normalizedClient}`;
-          script.async = true;
-          script.crossOrigin = 'anonymous';
-          document.head.appendChild(script);
-        }
-        // Push ad
-        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-      } catch (e) {
-        console.warn('AdMob load notice:', e);
-      }
+    if (isTestMode || !normalizedClient || !normalizedSlot || typeof window === 'undefined') {
+      return;
     }
+
+    try {
+      const scriptId = 'google-adsense-script';
+      if (!document.getElementById(scriptId)) {
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${normalizedClient}`;
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        document.head.appendChild(script);
+      }
+    } catch (e) {
+      console.warn('AdMob script injection notice:', e);
+    }
+
+    // Safely wait for container layout before calling adsbygoogle.push
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    const tryPushAd = () => {
+      if (adPushedRef.current) return;
+      attempts++;
+
+      const el = adRef.current;
+      // Ensure element is in DOM and parent container has positive availableWidth
+      const containerWidth = el?.parentElement?.offsetWidth || el?.offsetWidth || 0;
+
+      if (el && containerWidth > 0) {
+        try {
+          adPushedRef.current = true;
+          ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+        } catch (err) {
+          console.warn('AdMob push safely handled:', err);
+          setHasAdError(true);
+        }
+      } else if (attempts < maxAttempts) {
+        requestAnimationFrame(() => {
+          setTimeout(tryPushAd, 100);
+        });
+      } else {
+        // Fallback to compliant banner card if width unavailable
+        setHasAdError(true);
+      }
+    };
+
+    const timer = setTimeout(tryPushAd, 150);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [normalizedClient, normalizedSlot, isTestMode]);
 
   const currentAd = sampleAds[adIndex];
@@ -114,16 +152,23 @@ export const AdBanner: React.FC<AdBannerProps> = ({
           style={{ backgroundColor: currentAd.color }}
         />
 
-        {/* Real Google AdMob Container if active & configured */}
-        {!isTestMode && normalizedClient && normalizedSlot ? (
-          <div className="w-full h-[50px] max-h-[50px] flex items-center justify-center overflow-hidden shrink-0">
+        {/* Real Google AdMob Container if active, configured, and error-free */}
+        {!isTestMode && normalizedClient && normalizedSlot && !hasAdError ? (
+          <div className="w-full min-w-[320px] h-[50px] max-h-[50px] flex items-center justify-center overflow-hidden shrink-0">
             <ins
+              ref={adRef}
               className="adsbygoogle"
-              style={{ display: 'inline-block', width: '320px', height: '50px', maxHeight: '50px', overflow: 'hidden' }}
+              style={{
+                display: 'inline-block',
+                width: '320px',
+                minWidth: '320px',
+                height: '50px',
+                minHeight: '50px',
+                maxHeight: '50px',
+                overflow: 'hidden',
+              }}
               data-ad-client={normalizedClient}
               data-ad-slot={normalizedSlot}
-              data-ad-format="horizontal"
-              data-full-width-responsive="false"
             />
           </div>
         ) : (

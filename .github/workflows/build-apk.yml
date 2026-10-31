@@ -56,23 +56,22 @@ jobs:
           fi
 
           # Enable background audio by keeping WebView timers active in MainActivity onPause
-          MAIN_ACTIVITY=$(find android -name "MainActivity.java" | head -n 1)
-          if [ -f "$MAIN_ACTIVITY" ]; then
-            cat << 'EOF' > "$MAIN_ACTIVITY"
-package com.rdiogo.app;
-
-import com.getcapacitor.BridgeActivity;
-
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().resumeTimers();
-        }
-    }
-}
-EOF
+          MAIN_ACTIVITY=$(find android -name "MainActivity.java" 2>/dev/null | head -n 1)
+          if [ -n "$MAIN_ACTIVITY" ] && [ -f "$MAIN_ACTIVITY" ]; then
+            printf '%s\n' \
+              'package com.rdiogo.app;' \
+              '' \
+              'import com.getcapacitor.BridgeActivity;' \
+              '' \
+              'public class MainActivity extends BridgeActivity {' \
+              '    @Override' \
+              '    public void onPause() {' \
+              '        super.onPause();' \
+              '        if (getBridge() != null && getBridge().getWebView() != null) {' \
+              '            getBridge().getWebView().resumeTimers();' \
+              '        }' \
+              '    }' \
+              '}' > "$MAIN_ACTIVITY"
           fi
 
       - name: Grant Execute Permission to Gradle Wrapper
