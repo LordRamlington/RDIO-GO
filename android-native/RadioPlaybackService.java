@@ -187,7 +187,7 @@ public class RadioPlaybackService extends Service {
 
         // Update MediaSession PlaybackState
         if (mediaSession != null) {
-            long state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
+            int state = isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED;
             PlaybackState.Builder pb = new PlaybackState.Builder()
                 .setActions(
                     PlaybackState.ACTION_PLAY |
